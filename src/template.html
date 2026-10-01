@@ -1,0 +1,925 @@
+<title>Religions Through Time</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a star-chart timeline. A luminous time band runs across the middle; each religion is a star on a stem,
+   above the band if a founding teacher or prophet started it, below if it grew out of a people's traditions.
+   Controls and legend above; the selected religion's story, the world today, and sources and method below.
+   Night (dark-first) and Day themes share one token set: night values on :root, day values redefined below. */
+:root {
+  color-scheme: dark;
+  --sky: #0a0e1c;
+  --sky-glow: #161c3a;
+  --panel: #10162b;
+  --raised: #19213f;
+  --band: #141b35;
+  --ink: #ece7da;
+  --ink-2: #b2b5c6;
+  --muted: #858ba6;
+  --rule: #283055;
+  --rule-soft: #1b2242;
+  --era: rgba(236, 231, 218, 0.022);
+  --gold: #f2c46d;
+  --gold-soft: rgba(242, 196, 109, 0.18);
+  --gold-span: rgba(242, 196, 109, 0.26);
+  --bar: #8f95b3;
+  --shadow: rgba(2, 4, 12, 0.55);
+  --starfield: 0.9;
+  --glow: url(#rtt-glow);
+  --f-display: "Cormorant Garamond", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-label: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --sky: #edf0f6; --sky-glow: #ffffff; --panel: #fbfcfe; --raised: #ffffff; --band: #e6eaf3;
+    --ink: #151b34; --ink-2: #434a65; --muted: #5f6680; --rule: #cdd3e2; --rule-soft: #e4e8f1;
+    --era: rgba(21, 27, 52, 0.035); --gold: #9a5d00; --gold-soft: rgba(154, 93, 0, 0.12); --gold-span: rgba(154, 93, 0, 0.2);
+    --bar: #6b7394; --shadow: rgba(21, 27, 52, 0.16); --starfield: 0; --glow: none;
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --sky: #edf0f6; --sky-glow: #ffffff; --panel: #fbfcfe; --raised: #ffffff; --band: #e6eaf3;
+  --ink: #151b34; --ink-2: #434a65; --muted: #5f6680; --rule: #cdd3e2; --rule-soft: #e4e8f1;
+  --era: rgba(21, 27, 52, 0.035); --gold: #9a5d00; --gold-soft: rgba(154, 93, 0, 0.12); --gold-span: rgba(154, 93, 0, 0.2);
+  --bar: #6b7394; --shadow: rgba(21, 27, 52, 0.16); --starfield: 0; --glow: none;
+}
+* { box-sizing: border-box; }
+html { background: var(--sky); }
+body {
+  background: radial-gradient(1200px 520px at 50% -140px, var(--sky-glow), var(--sky) 70%) no-repeat, var(--sky);
+  color: var(--ink);
+  font: 15px/1.55 var(--f-body);
+}
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: clamp(16px, 3vw, 40px); padding-block: 30px 56px; }
+.eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin: 0; }
+h1 { font: italic 500 clamp(40px, 6.4vw, 70px)/0.98 var(--f-display); margin: 12px 0 12px; letter-spacing: -0.01em; text-wrap: balance; }
+.dek { max-width: 70ch; color: var(--ink-2); margin: 0; font-size: 15.5px; }
+.dek b { color: var(--ink); font-weight: 600; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between; margin-top: 26px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.chip, .seg button, .rel-chip {
+  font: 500 12.5px/1 var(--f-body); color: var(--ink-2); background: transparent;
+  border: 1px solid var(--rule); border-radius: 999px; padding: 7px 12px; cursor: pointer;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+.chip:hover, .seg button:hover, .rel-chip:hover { border-color: var(--muted); color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--sky); border-color: var(--ink); }
+.chip .n { font-family: var(--f-mono); font-size: 11px; opacity: .7; margin-left: 4px; }
+.toggles { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 999px; padding: 2px; }
+.seg button { border: 0; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px; }
+.seg button[aria-pressed="true"] { background: var(--raised); color: var(--ink); }
+.seg svg { width: 13px; height: 13px; }
+.find { position: relative; display: inline-flex; }
+.find svg { position: absolute; left: 11px; top: 50%; width: 13px; height: 13px; margin-top: -6.5px; color: var(--muted); pointer-events: none; }
+.find input {
+  font: 400 13px/1 var(--f-body); color: var(--ink); background: var(--panel);
+  border: 1px solid var(--rule); border-radius: 999px; padding: 8px 12px 8px 31px; width: 200px;
+}
+.find input::placeholder { color: var(--muted); }
+.find input[aria-invalid="true"] { border-color: var(--gold); }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 26px; margin-top: 16px; font-size: 12.5px; color: var(--ink-2); align-items: center; }
+.legend .item { display: inline-flex; align-items: center; gap: 8px; }
+.legend svg { flex: none; overflow: visible; }
+
+.chart-shell { position: relative; margin-top: 16px; border: 1px solid var(--rule); border-radius: 16px; background: var(--panel); overflow: hidden; }
+.scroller { overflow-x: auto; overscroll-behavior-x: contain; }
+#chart { display: block; }
+.caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; padding: 10px 16px 12px; border-top: 1px solid var(--rule-soft); font-size: 12px; color: var(--muted); }
+.scroll-hint { display: none; }
+@media (max-width: 1040px) { .scroll-hint { display: inline; } }
+
+/* chart */
+.starfield { opacity: var(--starfield); transition: opacity .3s; }
+.starfield circle { fill: var(--ink); }
+.era-band { fill: var(--era); }
+.era-name { font: 500 10px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; fill: var(--muted); }
+.axis-band { fill: var(--band); stroke: var(--rule); stroke-width: 1; }
+.tick-label { font: 400 10.5px/1 var(--f-mono); fill: var(--muted); }
+.tick { stroke: var(--rule); stroke-width: 1; }
+.now-label { font: 500 10px/1 var(--f-mono); letter-spacing: .1em; fill: var(--gold); }
+.now-mark { fill: var(--gold); }
+.pre-label { font: 500 9.5px/1 var(--f-mono); letter-spacing: .16em; fill: var(--muted); }
+.break { stroke: var(--muted); stroke-width: 1.2; }
+.span { fill: var(--gold-span); }
+.span-range { fill: none; stroke: var(--gold); stroke-width: 1; stroke-dasharray: 2 3; }
+.ms-d { fill: var(--gold); stroke: var(--panel); stroke-width: 1.5; transition: transform .15s; transform-box: fill-box; transform-origin: center; }
+.ms-hit { fill: transparent; cursor: help; }
+.ms.hot .ms-d, .ms:hover .ms-d { transform: scale(1.5); }
+.edge { fill: none; stroke: var(--ink-2); stroke-width: 1; opacity: .2; transition: opacity .2s; }
+.edge.drew { stroke-dasharray: 4 4; }
+.edge.kin { stroke-dasharray: 1 4; stroke-linecap: round; }
+.edge.hot { stroke: var(--gold); opacity: .95; stroke-width: 1.4; }
+.edge.fam { opacity: .6; }
+.edge.cold { opacity: .05; }
+.stem { stroke: var(--rule); stroke-width: 1; }
+.foot { fill: var(--muted); }
+.dot { fill: var(--ink); stroke: var(--panel); stroke-width: 2; transform-box: fill-box; transform-origin: center; transition: transform .15s ease; }
+.dot.big { filter: var(--glow); }
+.dot.hist { fill: var(--panel); stroke: var(--ink-2); stroke-width: 1.5; }
+.dot.rough { fill: var(--ink); fill-opacity: .55; stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 1.6 1.6; }
+.halo { fill: none; stroke: var(--gold); stroke-width: 1.5; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.lbl { paint-order: stroke; stroke: var(--panel); stroke-width: 5px; stroke-linejoin: round; }
+.lbl .nm { font: 500 12.5px/1 var(--f-label); fill: var(--ink); }
+.lbl .dt { font: 400 10px/1 var(--f-mono); fill: var(--muted); }
+.hit { fill: transparent; cursor: pointer; }
+.item { transition: opacity .2s; outline: none; }
+.item:hover .dot, .item:focus-visible .dot { transform: scale(1.3); }
+.item:focus-visible .halo { opacity: 1; stroke-dasharray: 2 2; }
+.item.dim { opacity: .18; }
+.item.rel .halo { opacity: .8; }
+.item.rel .lbl .nm { fill: var(--gold); }
+.item.sel .dot { fill: var(--gold); stroke: var(--panel); fill-opacity: 1; stroke-dasharray: none; filter: var(--glow); }
+.item.sel .halo { opacity: 1; animation: rtt-pulse 1.2s ease-out 1; }
+.item.sel .stem { stroke: var(--gold); }
+.item.sel .lbl .nm { fill: var(--gold); font-weight: 600; }
+.item:hover .lbl .nm { text-decoration: underline; text-decoration-color: var(--muted); }
+@keyframes rtt-pulse { from { transform: scale(2.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.tip { position: absolute; left: 0; top: 0; pointer-events: none; width: max-content; max-width: 300px;
+  background: var(--raised); border: 1px solid var(--rule); border-radius: 12px; padding: 10px 12px 11px;
+  box-shadow: 0 10px 30px var(--shadow); font-size: 12.5px; line-height: 1.45; color: var(--ink-2); z-index: 5; }
+.tip strong { display: block; font: 600 15px/1.2 var(--f-body); color: var(--ink); }
+.tip .when { font: 400 11px/1.4 var(--f-mono); color: var(--gold); margin: 2px 0 6px; display: block; }
+.tip .foll { display: block; margin-top: 6px; color: var(--muted); font-size: 11.5px; }
+
+/* list view */
+.listwrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px; }
+th { text-align: left; font: 500 10.5px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 14px 14px 10px; border-bottom: 1px solid var(--rule); }
+td { padding: 10px 14px; border-bottom: 1px solid var(--rule-soft); color: var(--ink-2); vertical-align: top; }
+td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
+td.when { font-family: var(--f-mono); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: var(--rule-soft); }
+tbody tr[aria-selected="true"] td { background: var(--gold-soft); }
+tbody tr[aria-selected="true"] td:first-child { color: var(--gold); }
+
+/* detail */
+.detail { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 28px 44px; margin-top: 20px;
+  padding: clamp(18px, 3vw, 30px); border-radius: 16px; background: var(--panel); border: 1px solid var(--rule); }
+@media (max-width: 820px) { .detail { grid-template-columns: minmax(0, 1fr); } }
+.detail > div { min-width: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font: 400 12px/1.3 var(--f-mono); color: var(--muted); }
+.fam-tag { border: 1px solid var(--rule); border-radius: 999px; padding: 4px 9px; color: var(--ink-2); font-family: var(--f-body); font-size: 12px; }
+.detail h2 { font: 600 clamp(32px, 4.4vw, 46px)/1.02 var(--f-display); margin: 10px 0 4px; text-wrap: balance; }
+.detail .when-big { font: 500 13.5px/1.4 var(--f-mono); color: var(--gold); margin: 0 0 6px; }
+.kicker { font: 500 10.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 22px 0 9px; }
+.story { font-size: 16.5px; line-height: 1.6; color: var(--ink); max-width: 62ch; margin: 0; }
+.story.small { font-size: 14.5px; color: var(--ink-2); }
+.moments { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-left: 1px solid var(--rule); }
+.moments li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; padding: 6px 0 6px 14px; position: relative; color: var(--ink-2); font-size: 14px; line-height: 1.45; cursor: default; }
+.moments li::before { content: ""; position: absolute; left: -4px; top: 12px; width: 7px; height: 7px; background: var(--gold); transform: rotate(45deg); }
+.moments li:hover, .moments li:focus-visible { color: var(--ink); }
+.moments .yr { font: 500 12px/1.6 var(--f-mono); color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.eras { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 13.5px; display: grid; gap: 3px; }
+.eras li::marker { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+dl { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 0; }
+dt { font: 500 10.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+dd { margin: 0; color: var(--ink-2); }
+dd .src { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.rels { display: flex; flex-wrap: wrap; gap: 6px; }
+.rel-chip { padding: 6px 10px; }
+.rel-chip .k { color: var(--muted); font-size: 11px; margin-left: 4px; }
+.none { color: var(--muted); font-size: 13px; }
+.srcs { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13.5px; }
+a { color: var(--gold); text-decoration: none; border-bottom: 1px solid var(--gold-soft); }
+a:hover { border-bottom-color: var(--gold); }
+.links { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 22px; font-size: 13.5px; }
+.links small { color: var(--muted); font-size: 11.5px; }
+
+/* the world today */
+.panel { margin-top: 20px; padding: clamp(18px, 3vw, 30px); border-radius: 16px; background: var(--panel); border: 1px solid var(--rule); }
+.panel h3 { font: 600 28px/1.1 var(--f-display); margin: 0; }
+.panel .sub { color: var(--muted); font-size: 13px; margin: 4px 0 18px; }
+.bars { display: grid; gap: 4px; }
+.bar-row { display: grid; grid-template-columns: minmax(120px, 210px) minmax(0, 1fr) 118px; gap: 14px; align-items: center;
+  padding: 6px 8px; margin: 0 -8px; border-radius: 8px; border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 13.5px; text-align: left; }
+button.bar-row { cursor: pointer; }
+button.bar-row:hover { background: var(--rule-soft); color: var(--ink); }
+.bar-row .track { height: 8px; border-radius: 4px; background: var(--rule-soft); overflow: hidden; }
+.bar-row .fill { height: 100%; border-radius: 4px; background: var(--bar); }
+.bar-row.sel .fill { background: var(--gold); }
+.bar-row.sel { color: var(--ink); }
+.bar-row .val { font: 400 12px/1 var(--f-mono); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .bar-row { grid-template-columns: minmax(0, 1fr) 96px; } .bar-row .track { grid-column: 1 / -1; grid-row: 2; } }
+.panel .src-line { font-size: 12px; color: var(--muted); margin: 14px 0 0; }
+
+/* sources and method */
+.method { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px 44px; }
+@media (max-width: 820px) { .method { grid-template-columns: minmax(0, 1fr); } }
+.method h4 { font: 500 10.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.method ul { margin: 0; padding-left: 18px; display: grid; gap: 7px; color: var(--ink-2); font-size: 14px; max-width: 64ch; }
+.method .fs { list-style: none; padding: 0; font-size: 12.5px; gap: 5px; }
+.method .fs b { color: var(--ink); font-weight: 500; }
+
+footer { margin-top: 26px; font-size: 12px; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">World religions · An interactive timeline</p>
+    <h1>Religions Through Time</h1>
+    <p class="dek"><span id="count">44</span> religions on one line of time, from the Aboriginal Dreaming to Falun Gong. Stars <b>above the line</b> were started by a founding teacher or prophet. Stars <b>below</b> grew gradually out of a people's traditions. Tap any star to see how it came out, its key moments, and what grew from it.</p>
+  </header>
+
+  <div class="controls">
+    <div class="chips" id="chips" role="group" aria-label="Highlight a family of religions"></div>
+    <div class="toggles">
+      <label class="find"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="10.8" y1="10.8" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <input id="find" type="search" list="find-list" placeholder="Find a religion" aria-label="Find a religion" autocomplete="off">
+      </label>
+      <datalist id="find-list"></datalist>
+      <div class="seg" role="group" aria-label="Time scale">
+        <button type="button" id="sc-stretch" aria-pressed="true">Recent stretched</button>
+        <button type="button" id="sc-true" aria-pressed="false">True to time</button>
+      </div>
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" id="v-time" aria-pressed="true">Timeline</button>
+        <button type="button" id="v-list" aria-pressed="false">List</button>
+      </div>
+      <div class="seg" role="group" aria-label="Theme">
+        <button type="button" id="th-night" aria-pressed="true"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 1.8a6.3 6.3 0 1 0 3.7 10.4A5.2 5.2 0 0 1 10.5 1.8z" fill="currentColor"/></svg>Night</button>
+        <button type="button" id="th-day" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><g stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="8" y1="0.8" x2="8" y2="2.6"/><line x1="8" y1="13.4" x2="8" y2="15.2"/><line x1="0.8" y1="8" x2="2.6" y2="8"/><line x1="13.4" y1="8" x2="15.2" y2="8"/><line x1="2.9" y1="2.9" x2="4.2" y2="4.2"/><line x1="11.8" y1="11.8" x2="13.1" y2="13.1"/><line x1="2.9" y1="13.1" x2="4.2" y2="11.8"/><line x1="11.8" y1="4.2" x2="13.1" y2="2.9"/></g></svg>Day</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend" aria-label="How to read the chart">
+    <span class="item"><svg width="14" height="18" viewBox="0 0 14 18"><line x1="7" y1="17" x2="7" y2="6" stroke="var(--muted)"/><circle cx="7" cy="5" r="4" fill="var(--ink)"/></svg>Above: founded by a teacher or prophet</span>
+    <span class="item"><svg width="14" height="18" viewBox="0 0 14 18"><line x1="7" y1="1" x2="7" y2="12" stroke="var(--muted)"/><circle cx="7" cy="13" r="4" fill="var(--ink)"/></svg>Below: grew out of a people's traditions</span>
+    <span class="item"><svg width="66" height="20" viewBox="0 0 66 20"><circle cx="9" cy="10" r="9" fill="var(--ink)"/><circle cx="29" cy="10" r="7" fill="var(--ink)"/><circle cx="45" cy="10" r="5.2" fill="var(--ink)"/><circle cx="58" cy="10" r="3.8" fill="var(--ink)"/></svg>Followers today: over 1 bn · 100 m+ · 1 m+ · under 1 m</span>
+    <span class="item"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="var(--panel)" stroke="var(--ink-2)" stroke-width="1.5"/></svg>No longer practised</span>
+    <span class="item"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="var(--ink)" fill-opacity=".55" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="1.6 1.6"/></svg>Not reliably counted</span>
+    <span class="item"><svg width="88" height="10" viewBox="0 0 88 10"><line x1="0" y1="5" x2="24" y2="5" stroke="var(--ink-2)"/><line x1="32" y1="5" x2="56" y2="5" stroke="var(--ink-2)" stroke-dasharray="4 4"/><line x1="64" y1="5" x2="88" y2="5" stroke="var(--ink-2)" stroke-dasharray="1 4" stroke-linecap="round"/></svg>Grew out of · drew on · shares roots with</span>
+    <span class="item"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 1 l5 5 l-5 5 l-5 -5z" fill="var(--gold)"/></svg>Key moments of the selected religion</span>
+  </div>
+
+  <section class="chart-shell" id="shell">
+    <div class="scroller" id="scroller">
+      <svg id="chart" role="img" aria-label="Timeline of religions by when they appeared"></svg>
+    </div>
+    <div class="listwrap" id="listwrap" hidden>
+      <table>
+        <thead><tr><th scope="col">Religion</th><th scope="col">Came out</th><th scope="col">How</th><th scope="col">Family</th><th scope="col">Where it began</th><th scope="col">Followers today</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="tip" id="tip" hidden></div>
+    <div class="caption" id="caption">
+      <span id="scale-note">Time is stretched toward the present so the crowded last two centuries have room. Prehistoric traditions sit in the block on the left.</span>
+      <span class="scroll-hint">Scroll sideways to see the whole timeline.</span>
+    </div>
+  </section>
+
+  <section class="detail" id="detail" aria-live="polite"></section>
+
+  <section class="panel" aria-labelledby="world-h">
+    <h3 id="world-h">The world today</h3>
+    <p class="sub" id="world-sub">Share of the world's population by religion</p>
+    <div class="bars" id="bars"></div>
+    <p class="src-line" id="world-src"></p>
+  </section>
+
+  <section class="panel" aria-labelledby="method-h">
+    <h3 id="method-h">Sources and method</h3>
+    <p class="sub">How the chart is built, and where the facts come from.</p>
+    <div class="method">
+      <div>
+        <h4>How to read the placement</h4>
+        <ul>
+          <li>Each star sits at the earliest firm evidence for the religion. Traditions older than any record sit in the undated block on the left.</li>
+          <li>Debated or gradual beginnings appear as a dotted outline on the time band when you select the religion; the gold band shows how long it has lasted, or lasted.</li>
+          <li>Above the band: started by a founding teacher or prophet. Below: grew out of a people's traditions. Borderline cases are explained in each religion's story.</li>
+          <li>Star sizes group followers into four classes, because most counts are estimates. Hollow stars are religions no longer practised.</li>
+          <li>Lines mean grew out of (solid), drew on (dashed) or shares roots with (dotted). They describe historical relationships; they don't judge any faith's own account of its origin.</li>
+          <li>The texts are AI-assisted summaries of general historical knowledge. Key dates and figures were spot-checked, and every link was checked, in October 2026. Dates are approximate and many are debated.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Sources</h4>
+        <ul>
+          <li id="m-world"></li>
+          <li>Each religion's card lists further reading, starting with its main Wikipedia article.</li>
+          <li>Where a follower count has a specific source, it is named on the card:</li>
+        </ul>
+        <ul class="fs" id="m-followers"></ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>Religions Through Time · October 2026</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // Filled in by scripts/build.mjs from data/religions.json (and, for a private build, a notes map).
+  var DATA = /*@DATA@*/null;
+  var NOTES = /*@NOTES@*/null;
+  if (!DATA) {
+    document.getElementById("detail").textContent = "This is the page template. Build the page with: npm run build";
+    return;
+  }
+
+  var FAMS = DATA.families.map(function (f) { return [f.id, f.name]; });
+  var FAM_NAME = {};
+  FAMS.forEach(function (f) { FAM_NAME[f[0]] = f[1]; });
+  var W_BASE = "https://en.wikipedia.org/wiki/";
+  var D = DATA.religions;
+
+  var BY = {};
+  D.forEach(function (d) { BY[d.id] = d; d.kids = []; });
+  D.forEach(function (d) { d.parents.forEach(function (p) { BY[p[0]].kids.push([d.id, p[1]]); }); });
+  var EDGES = [];
+  D.forEach(function (d) { d.parents.forEach(function (p) { EDGES.push({ from: p[0], to: d.id, kind: p[1] }); }); });
+  var ORDER = D.slice().sort(function (a, b) {
+    var ay = a.pre != null ? -1e6 + a.pre : a.y, by = b.pre != null ? -1e6 + b.pre : b.y;
+    return ay - by;
+  });
+  var R = { xl: 9, l: 7, m: 5.2, s: 3.8, none: 4.6 };
+
+  var Y0 = -3600, Y1 = 2030, NOW = 2026;
+  var ERAS = [
+    { a: -3600, b: -800, name: "First civilizations" },
+    { a: -800, b: -200, name: "Axial Age" },
+    { a: -200, b: 1500, name: "Empires & universal faiths" },
+    { a: 1500, b: 1800, name: "Early modern" },
+    { a: 1800, b: Y1, name: "Modern" }
+  ];
+  var TICKS = [1, -1000, -2000, -3000, 1000, 1500, 2000, -500, 500, 1800, 1900, -1500, -2500, 1950, 1700];
+
+  var state = { s: 0, fam: "all", sel: "christianity", view: "time" };
+  try { if (localStorage.getItem("rtt-scale") === "1") state.s = 1; } catch (e) {}
+  var hash = (location.hash || "").slice(1);
+  if (BY[hash]) state.sel = hash;
+
+  var root = document.documentElement;
+  var svg = document.getElementById("chart");
+  var shell = document.getElementById("shell");
+  var scroller = document.getElementById("scroller");
+  var tip = document.getElementById("tip");
+  var NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, parent) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function fmtYear(y) { return y < 0 ? (-y) + " BCE" : (y === 1 ? "1 CE" : String(y)); }
+  function fmtMoment(m) { var y = m[0]; return (m[2] ? "c. " : "") + (y < 0 ? (-y) + " BCE" : (y < 1000 ? y + " CE" : String(y))); }
+  function reduced() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  function findFirst(list, fn) { for (var i = 0; i < list.length; i++) if (fn(list[i])) return list[i]; return null; }
+
+  document.getElementById("count").textContent = D.length;
+  svg.setAttribute("aria-label", "Timeline of " + D.length + " religions by when they appeared");
+
+  // ---------- theme ----------
+  var thNight = document.getElementById("th-night"), thDay = document.getElementById("th-day");
+  try { var st = localStorage.getItem("rtt-theme"); if (st === "light" || st === "dark") root.setAttribute("data-theme", st); } catch (e) {}
+  function themeNow() {
+    var t = root.getAttribute("data-theme");
+    if (t === "light" || t === "dark") return t;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+  function syncTheme() {
+    var t = themeNow();
+    thNight.setAttribute("aria-pressed", t === "dark" ? "true" : "false");
+    thDay.setAttribute("aria-pressed", t === "light" ? "true" : "false");
+  }
+  function setTheme(t) {
+    root.setAttribute("data-theme", t);
+    try { localStorage.setItem("rtt-theme", t); } catch (e) {}
+    syncTheme();
+  }
+  thNight.addEventListener("click", function () { setTheme("dark"); });
+  thDay.addEventListener("click", function () { setTheme("light"); });
+  if (window.matchMedia) {
+    var mq = window.matchMedia("(prefers-color-scheme: light)");
+    if (mq.addEventListener) mq.addEventListener("change", syncTheme);
+  }
+  if (window.MutationObserver) new MutationObserver(syncTheme).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+  syncTheme();
+
+  // ---------- text measurement ----------
+  var ctx = document.createElement("canvas").getContext("2d");
+  var widths = {};
+  function measure() {
+    D.forEach(function (d) {
+      ctx.font = '500 12.5px "IBM Plex Sans Condensed", "Arial Narrow", sans-serif';
+      var a = ctx.measureText(d.label).width;
+      ctx.font = '400 10px "IBM Plex Mono", Menlo, monospace';
+      var b = ctx.measureText(d.ds).width;
+      widths[d.id] = Math.ceil(Math.max(a, b));
+    });
+  }
+
+  // ---------- layout ----------
+  var BAND = 24, BASE = 26, STEP = 33, TOPPAD = 34, BOTPAD = 26;
+  function geometry(s) {
+    var W = Math.max(scroller.clientWidth || shell.clientWidth || 1100, 1060);
+    var ml = 18, mr = 26;
+    var preW = Math.max(96, (W - ml - mr) * 0.085);
+    var x0 = ml + preW + 26, x1 = W - mr - 36;
+    return { W: W, s: s, ml: ml, preW: preW, x0: x0, mainW: x1 - x0 };
+  }
+  function X(g, y) {
+    var fs = 1 - Math.sqrt(Math.max(0, Y1 - y)) / Math.sqrt(Y1 - Y0);
+    var fl = (y - Y0) / (Y1 - Y0);
+    return g.x0 + ((1 - g.s) * fs + g.s * fl) * g.mainW;
+  }
+  function preX(g, i) { return g.ml + 16 + i * ((g.preW - 24) / 4.6); }
+
+  function layout(s) {
+    var g = geometry(s);
+    var pos = {};
+    var levels = { up: [], down: [] };
+    var maxL = { up: 0, down: 0 };
+    ORDER.forEach(function (d) {
+      var x = d.pre != null ? preX(g, d.pre) : X(g, d.y);
+      var r = R[d.size];
+      var w = widths[d.id] || 80;
+      var side = d.how === "founded" ? "up" : "down";
+      var anchor = (x + r + 6 + w > g.W - 10) ? "end" : "start";
+      var bx0 = anchor === "start" ? x - r - 3 : x - r - 6 - w - 4;
+      var bx1 = anchor === "start" ? x + r + 6 + w + 6 : x + r + 3;
+      var L = 0;
+      var lv = levels[side];
+      for (; L < 24; L++) {
+        var row = lv[L] || (lv[L] = []);
+        var clash = row.some(function (b) { return !(bx1 < b[0] || bx0 > b[1]); });
+        if (!clash) break;
+      }
+      lv[L].push([bx0, bx1]);
+      if (L > maxL[side]) maxL[side] = L;
+      pos[d.id] = { x: x, side: side, level: L, anchor: anchor, r: r };
+    });
+    var upH = BASE + maxL.up * STEP + 18;
+    var downH = BASE + maxL.down * STEP + 22;
+    var axisY = TOPPAD + upH + BAND / 2;
+    var H = axisY + BAND / 2 + downH + BOTPAD;
+    D.forEach(function (d) {
+      var p = pos[d.id];
+      var off = BAND / 2 + BASE + p.level * STEP;
+      p.y = p.side === "up" ? axisY - off : axisY + off;
+    });
+    return { g: g, pos: pos, axisY: axisY, H: H };
+  }
+
+  // ---------- static svg structure ----------
+  var defs = el("defs", {}, svg);
+  defs.innerHTML = '<filter id="rtt-glow" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  var gSky = el("g", { "class": "starfield", "aria-hidden": "true" }, svg),
+      gBands = el("g", {}, svg), gAxis = el("g", {}, svg), gSpan = el("g", {}, svg), gTicks = el("g", {}, svg),
+      gEdges = el("g", {}, svg), gMs = el("g", {}, svg), gItems = el("g", {}, svg);
+  var SKY = (function () {
+    var seed = 7, out = [];
+    function rnd() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
+    for (var i = 0; i < 240; i++) out.push([rnd(), rnd(), 0.35 + rnd() * 0.85, 0.12 + rnd() * 0.55]);
+    return out;
+  })();
+  var edgeEls = EDGES.map(function (e) { return el("path", { "class": "edge " + e.kind }, gEdges); });
+  var itemEls = {};
+  var lastPT = "mouse";
+  svg.addEventListener("pointerdown", function (ev) { lastPT = ev.pointerType; });
+  ORDER.forEach(function (d) {
+    var gi = el("g", { "class": "item", tabindex: "0", role: "button", "aria-label": d.name + ", " + d.date }, gItems);
+    var o = {
+      g: gi,
+      stem: el("line", { "class": "stem" }, gi),
+      foot: el("circle", { "class": "foot", r: "1.6" }, gi),
+      halo: el("circle", { "class": "halo" }, gi),
+      dot: el("circle", { "class": "dot" + (d.size === "none" ? " hist" : "") + (d.rough ? " rough" : "") + (d.size === "xl" || d.size === "l" ? " big" : "") }, gi),
+      lbl: el("text", { "class": "lbl" }, gi),
+      hit: el("rect", { "class": "hit" }, gi)
+    };
+    o.nm = el("tspan", { "class": "nm" }, o.lbl); o.nm.textContent = d.label;
+    o.dt = el("tspan", { "class": "dt" }, o.lbl); o.dt.textContent = d.ds;
+    itemEls[d.id] = o;
+    gi.addEventListener("click", function () { select(d.id, true); });
+    gi.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(d.id, true); }
+      if (ev.key === "ArrowRight" || ev.key === "ArrowLeft") {
+        ev.preventDefault();
+        var i = ORDER.indexOf(d) + (ev.key === "ArrowRight" ? 1 : -1);
+        var n = ORDER[(i + ORDER.length) % ORDER.length];
+        itemEls[n.id].g.focus();
+      }
+      if (ev.key === "Escape") hideTip();
+    });
+    gi.addEventListener("pointerenter", function (ev) { if (ev.pointerType === "mouse") showTip(tipForReligion(d), ev.clientX, ev.clientY); });
+    gi.addEventListener("pointermove", function (ev) { if (ev.pointerType === "mouse") placeTip(ev.clientX, ev.clientY); });
+    gi.addEventListener("pointerleave", hideTip);
+    gi.addEventListener("focus", function () {
+      if (lastPT === "touch") return;
+      var b = o.dot.getBoundingClientRect();
+      showTip(tipForReligion(d), b.right, b.bottom);
+    });
+    gi.addEventListener("blur", hideTip);
+  });
+  gMs.addEventListener("pointerover", function (ev) {
+    var t = ev.target.closest ? ev.target.closest(".ms") : null;
+    if (!t) return;
+    var m = BY[state.sel].milestones[+t.getAttribute("data-i")];
+    showTip({ title: m[1], when: fmtMoment(m) + " · " + BY[state.sel].name }, ev.clientX, ev.clientY);
+  });
+  gMs.addEventListener("pointermove", function (ev) { placeTip(ev.clientX, ev.clientY); });
+  gMs.addEventListener("pointerout", function (ev) { if (!ev.relatedTarget || !gMs.contains(ev.relatedTarget)) hideTip(); });
+
+  // ---------- drawing ----------
+  var frame = null;
+  function draw(f) {
+    frame = f;
+    var g = f.g, ay = f.axisY, top = ay - BAND / 2, bot = ay + BAND / 2;
+    svg.setAttribute("width", g.W);
+    svg.setAttribute("height", Math.round(f.H));
+    svg.setAttribute("viewBox", "0 0 " + g.W + " " + Math.round(f.H));
+
+    // background stars (night theme only; hidden by the --starfield token in day)
+    var sh = "", n = Math.min(SKY.length, Math.round(g.W * f.H / 4200));
+    for (var i = 0; i < n; i++) {
+      var sx = SKY[i][0] * g.W, sy = SKY[i][1] * f.H;
+      if (Math.abs(sy - ay) < BAND) continue;
+      sh += '<circle cx="' + sx.toFixed(1) + '" cy="' + sy.toFixed(1) + '" r="' + SKY[i][2].toFixed(2) + '" opacity="' + SKY[i][3].toFixed(2) + '"/>';
+    }
+    gSky.innerHTML = sh;
+
+    // eras
+    var bh = "";
+    ERAS.forEach(function (e, i) {
+      var a = X(g, e.a), b = Math.min(X(g, e.b), g.x0 + g.mainW + 30);
+      if (i % 2 === 0) bh += '<rect class="era-band" x="' + a.toFixed(1) + '" y="0" width="' + (b - a).toFixed(1) + '" height="' + f.H.toFixed(1) + '"/>';
+      ctx.font = '500 10px "IBM Plex Mono", monospace';
+      var tw = ctx.measureText(e.name.toUpperCase()).width + e.name.length * 1.4;
+      if (b - a > tw + 12) bh += '<text class="era-name" x="' + ((a + b) / 2).toFixed(1) + '" y="20" text-anchor="middle">' + e.name + "</text>";
+    });
+    bh += '<text class="era-name" x="' + (g.ml + g.preW / 2).toFixed(1) + '" y="20" text-anchor="middle">Prehistory</text>';
+    gBands.innerHTML = bh;
+
+    // axis band, undated block, break mark
+    var ah = '<rect class="axis-band" x="' + g.ml + '" y="' + top + '" width="' + (g.preW + 4).toFixed(1) + '" height="' + BAND + '" rx="12"/>';
+    ah += '<rect class="axis-band" x="' + (g.x0 - 10).toFixed(1) + '" y="' + top + '" width="' + (g.mainW + 46).toFixed(1) + '" height="' + BAND + '" rx="12"/>';
+    ah += '<text class="pre-label" x="' + (g.ml + g.preW / 2 + 2).toFixed(1) + '" y="' + (ay + 3.5) + '" text-anchor="middle">UNDATED</text>';
+    var bx = g.ml + g.preW + 15;
+    ah += '<line class="break" x1="' + (bx - 4) + '" y1="' + (ay + 6) + '" x2="' + (bx) + '" y2="' + (ay - 6) + '"/>';
+    ah += '<line class="break" x1="' + (bx + 1) + '" y1="' + (ay + 6) + '" x2="' + (bx + 5) + '" y2="' + (ay - 6) + '"/>';
+    gAxis.innerHTML = ah;
+
+    // ticks above the span band
+    ah = "";
+    var kept = [];
+    ctx.font = '400 10.5px "IBM Plex Mono", Menlo, monospace';
+    TICKS.forEach(function (y) {
+      var x = X(g, y), hw = ctx.measureText(fmtYear(y)).width / 2 + 9;
+      if (kept.some(function (k) { return x + hw > k[0] && x - hw < k[1]; })) return;
+      kept.push([x - hw, x + hw]);
+      ah += '<line class="tick" x1="' + x.toFixed(1) + '" y1="' + (top - 4) + '" x2="' + x.toFixed(1) + '" y2="' + top + '"/>';
+      ah += '<line class="tick" x1="' + x.toFixed(1) + '" y1="' + bot + '" x2="' + x.toFixed(1) + '" y2="' + (bot + 4) + '"/>';
+      ah += '<text class="tick-label" x="' + x.toFixed(1) + '" y="' + (ay + 3.8) + '" text-anchor="middle">' + fmtYear(y) + "</text>";
+    });
+    var nx = X(g, NOW);
+    ah += '<path class="now-mark" d="M' + nx.toFixed(1) + "," + (top - 7) + ' l4,4 l-4,4 l-4,-4z"/>';
+    ah += '<text class="now-label" x="' + (nx + 8).toFixed(1) + '" y="' + (top - 3) + '">TODAY</text>';
+    gTicks.innerHTML = ah;
+
+    // items
+    D.forEach(function (d) {
+      var p = f.pos[d.id], o = itemEls[d.id], w = widths[d.id] || 80;
+      var y0 = p.side === "up" ? top : bot;
+      o.stem.setAttribute("x1", p.x); o.stem.setAttribute("x2", p.x);
+      o.stem.setAttribute("y1", y0); o.stem.setAttribute("y2", p.y);
+      o.foot.setAttribute("cx", p.x); o.foot.setAttribute("cy", y0);
+      o.dot.setAttribute("cx", p.x); o.dot.setAttribute("cy", p.y); o.dot.setAttribute("r", p.r);
+      o.halo.setAttribute("cx", p.x); o.halo.setAttribute("cy", p.y); o.halo.setAttribute("r", p.r + 4.5);
+      var tx = p.anchor === "start" ? p.x + p.r + 6 : p.x - p.r - 6;
+      o.lbl.setAttribute("text-anchor", p.anchor);
+      o.nm.setAttribute("x", tx); o.nm.setAttribute("y", p.y - 0.5);
+      o.dt.setAttribute("x", tx); o.dt.setAttribute("y", p.y + 11);
+      var hx = p.anchor === "start" ? p.x - 12 : p.x - p.r - 8 - w;
+      o.hit.setAttribute("x", hx); o.hit.setAttribute("y", p.y - 14);
+      o.hit.setAttribute("width", w + p.r + 20); o.hit.setAttribute("height", 30);
+    });
+
+    // edges
+    EDGES.forEach(function (e, i) {
+      var a = f.pos[e.from], b = f.pos[e.to];
+      var mx = (a.x + b.x) / 2;
+      edgeEls[i].setAttribute("d", "M" + a.x.toFixed(1) + "," + a.y.toFixed(1) + " C" + mx.toFixed(1) + "," + a.y.toFixed(1) + " " + mx.toFixed(1) + "," + b.y.toFixed(1) + " " + b.x.toFixed(1) + "," + b.y.toFixed(1));
+    });
+    drawSpan();
+  }
+
+  function drawSpan() {
+    if (!frame) return;
+    var d = BY[state.sel], g = frame.g, top = frame.axisY - BAND / 2;
+    var h = "";
+    if (d && d.pre == null) {
+      var a = X(g, d.y), b = X(g, d.end != null ? d.end : NOW);
+      h += '<rect class="span" x="' + a.toFixed(1) + '" y="' + (top + 2) + '" width="' + Math.max(3, b - a).toFixed(1) + '" height="' + (BAND - 4) + '" rx="10"/>';
+      if (d.range) {
+        var ra = X(g, d.range[0]), rb = X(g, d.range[1]);
+        h += '<rect class="span-range" x="' + ra.toFixed(1) + '" y="' + (top - 3) + '" width="' + Math.max(2, rb - ra).toFixed(1) + '" height="' + (BAND + 6) + '" rx="12"/>';
+      }
+    }
+    gSpan.innerHTML = h;
+    var mh = "";
+    (d.milestones || []).forEach(function (m, i) {
+      if (m[0] < Y0) return;
+      var x = X(g, m[0]).toFixed(1);
+      mh += '<g class="ms" data-i="' + i + '" aria-hidden="true"><circle class="ms-hit" cx="' + x + '" cy="' + top + '" r="9"/>' +
+        '<path class="ms-d" d="M' + x + "," + (top - 5) + ' l5,5 l-5,5 l-5,-5z"/></g>';
+    });
+    gMs.innerHTML = mh;
+  }
+
+  // ---------- highlight state ----------
+  function applyState() {
+    var sel = state.sel, fam = state.fam;
+    var rel = {};
+    if (sel) {
+      BY[sel].parents.forEach(function (p) { rel[p[0]] = 1; });
+      BY[sel].kids.forEach(function (k) { rel[k[0]] = 1; });
+    }
+    D.forEach(function (d) {
+      var c = itemEls[d.id].g.classList;
+      c.toggle("dim", fam !== "all" && d.fam !== fam && d.id !== sel);
+      c.toggle("sel", d.id === sel);
+      c.toggle("rel", !!rel[d.id]);
+      itemEls[d.id].g.setAttribute("aria-pressed", d.id === sel ? "true" : "false");
+    });
+    EDGES.forEach(function (e, i) {
+      var c = edgeEls[i].classList;
+      var hot = sel && (e.from === sel || e.to === sel);
+      var famEdge = fam !== "all" && BY[e.from].fam === fam && BY[e.to].fam === fam;
+      c.toggle("hot", !!hot);
+      c.toggle("fam", !hot && famEdge);
+      c.toggle("cold", !hot && !famEdge && (fam !== "all" || !!sel));
+    });
+    drawSpan();
+    document.querySelectorAll("#chips .chip").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.fam === fam ? "true" : "false"); });
+    document.querySelectorAll("#tbody tr").forEach(function (tr) {
+      tr.hidden = fam !== "all" && BY[tr.dataset.id].fam !== fam;
+      tr.setAttribute("aria-selected", tr.dataset.id === sel ? "true" : "false");
+    });
+    document.querySelectorAll("#bars .bar-row").forEach(function (b) { b.classList.toggle("sel", b.dataset.id === sel); });
+  }
+
+  // ---------- tooltip ----------
+  function tipForReligion(d) {
+    return {
+      title: d.name,
+      when: d.date + (d.end != null ? " – ended " + d.endLabel.split(",")[0] : ""),
+      text: d.story.split(/(?<=[A-Za-z)\d]{2}[.!?])\s+(?=[A-Z"])/)[0],
+      foot: "Followers today: " + d.followers
+    };
+  }
+  function showTip(t, cx, cy) {
+    tip.innerHTML = "<strong></strong><span class=\"when\"></span>" + (t.text ? "<span class=\"s\"></span>" : "") + (t.foot ? "<span class=\"foll\"></span>" : "");
+    tip.querySelector("strong").textContent = t.title;
+    tip.querySelector(".when").textContent = t.when;
+    if (t.text) tip.querySelector(".s").textContent = t.text;
+    if (t.foot) tip.querySelector(".foll").textContent = t.foot;
+    tip.hidden = false;
+    placeTip(cx, cy);
+  }
+  function placeTip(cx, cy) {
+    if (tip.hidden) return;
+    var r = shell.getBoundingClientRect();
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    var x = cx - r.left + 16, y = cy - r.top + 16;
+    if (x + tw > r.width - 8) x = cx - r.left - tw - 16;
+    if (x < 8) x = 8;
+    if (y + th > r.height - 8) y = cy - r.top - th - 16;
+    if (y < 8) y = 8;
+    tip.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+  }
+  function hideTip() { tip.hidden = true; }
+
+  // ---------- detail ----------
+  var KIND_UP = { grew: "its parent", drew: "an influence", kin: "shared roots" };
+  var KIND_DOWN = { grew: "grew out of it", drew: "drew on it", kin: "shared roots" };
+  function relChips(list, kinds) {
+    if (!list.length) return '<span class="none">None shown on this chart</span>';
+    return list.map(function (p) {
+      return '<button type="button" class="rel-chip" data-go="' + p[0] + '">' + esc(BY[p[0]].label) + '<span class="k">' + kinds[p[1]] + "</span></button>";
+    }).join("");
+  }
+  function noteLink(d) {
+    if (!NOTES || !NOTES.files || !NOTES.files[d.id]) return "";
+    var url = "obsidian://open?vault=" + encodeURIComponent(NOTES.vault) + "&file=" + encodeURIComponent(NOTES.files[d.id]);
+    return '<a href="' + esc(url) + '">Open the history note in Obsidian</a><small>(works on the computer that has the notes)</small>';
+  }
+  function renderDetail() {
+    var d = BY[state.sel];
+    var det = document.getElementById("detail");
+    var span = d.pre != null ? "Its beginnings are older than any record, so it sits in the undated block on the left." :
+      (d.end != null ? "Practised until " + d.endLabel + ". The gold band on the timeline shows its whole span." :
+      "Still practised today. The gold band on the timeline shows its span from " + d.ds + " to now.");
+    if (d.rangeLabel) span += " The dotted outline marks the uncertain or gradual start (" + d.rangeLabel + ").";
+    var moments = (d.milestones || []).map(function (m, i) {
+      return '<li tabindex="0" data-i="' + i + '"><span class="yr">' + esc(fmtMoment(m)) + "</span><span>" + esc(m[1]) + "</span></li>";
+    }).join("");
+    var eras = (d.eras || []).map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("");
+    var seen = {}, sources = [[d.name + " on Wikipedia", W_BASE + d.wiki]].concat(d.sources || []).filter(function (s) {
+      var k = s[1].replace(/\/$/, "");
+      if (seen[k]) return false;
+      seen[k] = 1; return true;
+    }).map(function (s) {
+      return '<li><a href="' + esc(s[1]) + '" target="_blank" rel="noopener">' + esc(s[0].replace(/^Wikipedia: /, "")) + " ↗</a></li>";
+    }).join("");
+    det.innerHTML =
+      "<div>" +
+        '<div class="meta"><span class="fam-tag">' + esc(FAM_NAME[d.fam]) + "</span><span>" + (d.how === "founded" ? "Founded by a teacher or prophet" : "Grew out of a people's traditions") + "</span><span>" + esc(d.status) + "</span></div>" +
+        "<h2>" + esc(d.name) + "</h2>" +
+        '<p class="when-big">' + esc(d.date) + "</p>" +
+        '<p class="kicker">How it came out</p>' +
+        '<p class="story">' + esc(d.story) + "</p>" +
+        (moments ? '<p class="kicker">Key moments</p><ol class="moments" id="moments">' + moments + "</ol>" : "") +
+        '<p class="kicker">On the timeline</p><p class="story small">' + esc(span) + "</p>" +
+        '<div class="links"><a href="' + W_BASE + d.wiki + '" target="_blank" rel="noopener">Read more on Wikipedia ↗</a>' + noteLink(d) + "</div>" +
+      "</div>" +
+      "<div><dl>" +
+        "<div><dt>Where it began</dt><dd>" + esc(d.origin) + "</dd></div>" +
+        "<div><dt>Founder and key figures</dt><dd>" + esc(d.founders) + "</dd></div>" +
+        "<div><dt>Core beliefs</dt><dd>" + esc(d.beliefs) + "</dd></div>" +
+        "<div><dt>Sacred texts</dt><dd>" + esc(d.texts) + "</dd></div>" +
+        (d.branches ? "<div><dt>Main branches</dt><dd>" + esc(d.branches) + "</dd></div>" : "") +
+        "<div><dt>Followers today</dt><dd>" + esc(d.followers) + (d.followersSource ? '<span class="src">Source: ' + esc(d.followersSource) + "</span>" : "") + "</dd></div>" +
+        "<div><dt>Came out of</dt><dd class=\"rels\">" + relChips(d.parents, KIND_UP) + "</dd></div>" +
+        "<div><dt>What came out of it</dt><dd class=\"rels\">" + relChips(d.kids, KIND_DOWN) + "</dd></div>" +
+        (eras ? "<div><dt>Its history in " + d.eras.length + " eras</dt><dd><ol class=\"eras\">" + eras + "</ol></dd></div>" : "") +
+        "<div><dt>Sources and further reading</dt><dd><ul class=\"srcs\">" + sources + "</ul></dd></div>" +
+      "</dl></div>";
+    det.querySelectorAll("[data-go]").forEach(function (b) {
+      b.addEventListener("click", function () { select(b.dataset.go, false); focusItem(b.dataset.go); });
+    });
+    det.querySelectorAll("#moments li").forEach(function (li) {
+      function on() { var m = gMs.querySelector('.ms[data-i="' + li.dataset.i + '"]'); if (m) m.classList.add("hot"); }
+      function off() { var m = gMs.querySelector('.ms[data-i="' + li.dataset.i + '"]'); if (m) m.classList.remove("hot"); }
+      li.addEventListener("mouseenter", on); li.addEventListener("mouseleave", off);
+      li.addEventListener("focus", on); li.addEventListener("blur", off);
+    });
+  }
+  function focusItem(id) {
+    if (state.view !== "time" || !frame) return;
+    var p = frame.pos[id];
+    var sw = scroller.clientWidth;
+    if (p.x < scroller.scrollLeft + 40 || p.x > scroller.scrollLeft + sw - 40) {
+      scroller.scrollTo({ left: Math.max(0, p.x - sw / 2), behavior: reduced() ? "auto" : "smooth" });
+    }
+  }
+  function select(id, fromChart) {
+    state.sel = id;
+    applyState();
+    renderDetail();
+    try { history.replaceState(null, "", "#" + id); } catch (e) {}
+    if (fromChart) {
+      var det = document.getElementById("detail");
+      var rb = det.getBoundingClientRect();
+      if (rb.top > window.innerHeight - 80) det.scrollIntoView({ block: "nearest", behavior: reduced() ? "auto" : "smooth" });
+    }
+  }
+
+  // ---------- the world today, sources ----------
+  function renderWorld() {
+    var w = DATA.world, max = Math.max.apply(null, w.groups.map(function (g) { return g.share; }));
+    document.getElementById("world-sub").textContent = "Share of the world's population by religion, " + w.year;
+    document.getElementById("bars").innerHTML = w.groups.map(function (g) {
+      var tag = g.id ? "button" : "div";
+      return "<" + tag + (g.id ? ' type="button" data-id="' + g.id + '" aria-label="' + esc(g.name + ", " + g.share + "%, show " + BY[g.id].name) + '"' : "") + ' class="bar-row">' +
+        "<span>" + esc(g.name) + '</span><span class="track"><span class="fill" style="display:block;width:' + (g.share / max * 100).toFixed(1) + '%"></span></span>' +
+        '<span class="val">' + g.share.toFixed(1) + "% · " + esc(g.people) + "</span></" + tag + ">";
+    }).join("");
+    document.querySelectorAll("#bars button.bar-row").forEach(function (b) {
+      b.addEventListener("click", function () { select(b.dataset.id, false); focusItem(b.dataset.id); });
+    });
+    var link = '<a href="' + esc(w.source.url) + '" target="_blank" rel="noopener">' + esc(w.source.title) + "</a>";
+    document.getElementById("world-src").innerHTML = "Source: " + link + ". “Religiously unaffiliated” is not the same as atheist: many in this group believe in God or spirits. “Other religions” includes Sikhs, Jains, Bahá’ís, Taoists, Shinto, Zoroastrians, Wiccans and many folk religions.";
+    document.getElementById("m-world").innerHTML = "World shares: " + link + ", " + w.year + " data.";
+    var groups = {}, order = [];
+    D.filter(function (d) { return d.followersSource; }).forEach(function (d) {
+      if (!groups[d.followersSource]) { groups[d.followersSource] = []; order.push(d.followersSource); }
+      groups[d.followersSource].push(d.name);
+    });
+    order.sort(function (x, y) { return groups[y].length - groups[x].length || groups[x][0].localeCompare(groups[y][0]); });
+    document.getElementById("m-followers").innerHTML = order.map(function (s) {
+      return "<li><b>" + esc(groups[s].sort().join(", ")) + ":</b> " + esc(s) + "</li>";
+    }).join("");
+  }
+
+  // ---------- controls ----------
+  var chips = document.getElementById("chips");
+  [["all", "All"]].concat(FAMS).forEach(function (f) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.dataset.fam = f[0];
+    var n = f[0] === "all" ? D.length : D.filter(function (d) { return d.fam === f[0]; }).length;
+    b.innerHTML = esc(f[1]) + '<span class="n">' + n + "</span>";
+    b.addEventListener("click", function () { state.fam = (state.fam === f[0] && f[0] !== "all") ? "all" : f[0]; applyState(); });
+    chips.appendChild(b);
+  });
+
+  var find = document.getElementById("find");
+  document.getElementById("find-list").innerHTML = ORDER.map(function (d) { return '<option value="' + esc(d.name) + '"></option>'; }).join("");
+  function runFind(exactOnly) {
+    var q = find.value.trim().toLowerCase();
+    find.removeAttribute("aria-invalid");
+    if (!q) return;
+    function hay(d) { return (d.name + " " + d.label).toLowerCase(); }
+    var hit = findFirst(D, function (d) { return d.name.toLowerCase() === q || d.label.toLowerCase() === q; });
+    if (!hit && !exactOnly) hit = findFirst(D, function (d) { return d.name.toLowerCase().indexOf(q) === 0 || d.label.toLowerCase().indexOf(q) === 0; }) || findFirst(D, function (d) { return hay(d).indexOf(q) >= 0; });
+    if (!hit) { if (!exactOnly) find.setAttribute("aria-invalid", "true"); return; }
+    if (state.fam !== "all" && hit.fam !== state.fam) state.fam = "all";
+    select(hit.id, false);
+    focusItem(hit.id);
+    find.value = "";
+  }
+  find.addEventListener("input", function () { runFind(true); });
+  find.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); runFind(false); } });
+
+  var anim = null;
+  function setScale(s) {
+    if (s === state.s) return;
+    state.s = s;
+    try { localStorage.setItem("rtt-scale", String(s)); } catch (e) {}
+    syncScale();
+    var A = frame, B = layout(s);
+    if (!A || reduced()) { draw(B); return; }
+    if (anim) cancelAnimationFrame(anim);
+    var t0 = performance.now(), dur = 650;
+    function stepFn(now) {
+      var t = Math.min(1, (now - t0) / dur);
+      var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      var g = geometry(A.g.s + (B.g.s - A.g.s) * e);
+      var pos = {};
+      D.forEach(function (d) {
+        var a = A.pos[d.id], b = B.pos[d.id];
+        pos[d.id] = { x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e, side: b.side, anchor: e < 0.5 ? a.anchor : b.anchor, r: b.r, level: b.level };
+      });
+      draw({ g: g, pos: pos, axisY: A.axisY + (B.axisY - A.axisY) * e, H: A.H + (B.H - A.H) * e });
+      if (t < 1) anim = requestAnimationFrame(stepFn); else { anim = null; draw(B); }
+    }
+    anim = requestAnimationFrame(stepFn);
+  }
+  function syncScale() {
+    document.getElementById("sc-stretch").setAttribute("aria-pressed", state.s === 0 ? "true" : "false");
+    document.getElementById("sc-true").setAttribute("aria-pressed", state.s === 1 ? "true" : "false");
+    document.getElementById("scale-note").textContent = state.s === 0
+      ? "Time is stretched toward the present so the crowded last two centuries have room. Prehistoric traditions sit in the block on the left."
+      : "True to time: every century gets the same width. Most of today's religions are young next to the 5,000 years of recorded history.";
+  }
+  document.getElementById("sc-stretch").addEventListener("click", function () { setScale(0); });
+  document.getElementById("sc-true").addEventListener("click", function () { setScale(1); });
+
+  function setView(v) {
+    state.view = v;
+    document.getElementById("v-time").setAttribute("aria-pressed", v === "time" ? "true" : "false");
+    document.getElementById("v-list").setAttribute("aria-pressed", v === "list" ? "true" : "false");
+    scroller.hidden = v !== "time";
+    document.getElementById("listwrap").hidden = v !== "list";
+    document.getElementById("caption").hidden = v !== "time";
+    hideTip();
+  }
+  document.getElementById("v-time").addEventListener("click", function () { setView("time"); });
+  document.getElementById("v-list").addEventListener("click", function () { setView("list"); });
+
+  // list view
+  var tbody = document.getElementById("tbody");
+  ORDER.forEach(function (d) {
+    var tr = document.createElement("tr");
+    tr.dataset.id = d.id; tr.tabIndex = 0;
+    tr.innerHTML = "<td>" + esc(d.name) + '</td><td class="when">' + esc(d.ds) + "</td><td>" + (d.how === "founded" ? "Founded" : "Grew") + "</td><td>" + esc(FAM_NAME[d.fam]) + "</td><td>" + esc(d.origin) + "</td><td>" + esc(d.followers) + "</td>";
+    tr.addEventListener("click", function () { select(d.id, true); });
+    tr.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(d.id, true); } });
+    tbody.appendChild(tr);
+  });
+
+  // ---------- boot ----------
+  function relayout() { measure(); draw(layout(state.s)); }
+  syncScale();
+  relayout();
+  renderWorld();
+  applyState();
+  renderDetail();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { relayout(); applyState(); });
+  var lastW = scroller.clientWidth;
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () {
+      var w = scroller.clientWidth;
+      if (Math.abs(w - lastW) > 4) { lastW = w; draw(layout(state.s)); }
+    }).observe(shell);
+  }
+  requestAnimationFrame(function () { focusItem(state.sel); });
+})();
+</script>

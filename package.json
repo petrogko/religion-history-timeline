@@ -1,0 +1,19 @@
+{
+  "name": "religion-history-timeline",
+  "version": "1.1.0",
+  "description": "Interactive star-chart timeline of 44 world religions: when each came out, how it came out, its key moments, and which grew out of which.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check:build": "node scripts/build.mjs --check",
+    "validate": "node scripts/validate.mjs",
+    "links": "node scripts/check-links.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "serve": "python3 -m http.server 8000"
+  }
+}

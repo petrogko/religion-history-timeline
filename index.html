@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Interactive star-chart timeline of world religions: when each came out, whether a founder started it or it grew from tradition, its key moments, and which faiths grew out of which.">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Religions Through Time</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a star-chart timeline. A luminous time band runs across the middle; each religion is a star on a stem,
+   above the band if a founding teacher or prophet started it, below if it grew out of a people's traditions.
+   Controls and legend above; the selected religion's story, the world today, and sources and method below.
+   Night (dark-first) and Day themes share one token set: night values on :root, day values redefined below. */
+:root {
+  color-scheme: dark;
+  --sky: #0a0e1c;
+  --sky-glow: #161c3a;
+  --panel: #10162b;
+  --raised: #19213f;
+  --band: #141b35;
+  --ink: #ece7da;
+  --ink-2: #b2b5c6;
+  --muted: #858ba6;
+  --rule: #283055;
+  --rule-soft: #1b2242;
+  --era: rgba(236, 231, 218, 0.022);
+  --gold: #f2c46d;
+  --gold-soft: rgba(242, 196, 109, 0.18);
+  --gold-span: rgba(242, 196, 109, 0.26);
+  --bar: #8f95b3;
+  --shadow: rgba(2, 4, 12, 0.55);
+  --starfield: 0.9;
+  --glow: url(#rtt-glow);
+  --f-display: "Cormorant Garamond", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-label: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --sky: #edf0f6; --sky-glow: #ffffff; --panel: #fbfcfe; --raised: #ffffff; --band: #e6eaf3;
+    --ink: #151b34; --ink-2: #434a65; --muted: #5f6680; --rule: #cdd3e2; --rule-soft: #e4e8f1;
+    --era: rgba(21, 27, 52, 0.035); --gold: #9a5d00; --gold-soft: rgba(154, 93, 0, 0.12); --gold-span: rgba(154, 93, 0, 0.2);
+    --bar: #6b7394; --shadow: rgba(21, 27, 52, 0.16); --starfield: 0; --glow: none;
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --sky: #edf0f6; --sky-glow: #ffffff; --panel: #fbfcfe; --raised: #ffffff; --band: #e6eaf3;
+  --ink: #151b34; --ink-2: #434a65; --muted: #5f6680; --rule: #cdd3e2; --rule-soft: #e4e8f1;
+  --era: rgba(21, 27, 52, 0.035); --gold: #9a5d00; --gold-soft: rgba(154, 93, 0, 0.12); --gold-span: rgba(154, 93, 0, 0.2);
+  --bar: #6b7394; --shadow: rgba(21, 27, 52, 0.16); --starfield: 0; --glow: none;
+}
+* { box-sizing: border-box; }
+html { background: var(--sky); }
+body {
+  background: radial-gradient(1200px 520px at 50% -140px, var(--sky-glow), var(--sky) 70%) no-repeat, var(--sky);
+  color: var(--ink);
+  font: 15px/1.55 var(--f-body);
+}
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: clamp(16px, 3vw, 40px); padding-block: 30px 56px; }
+.eyebrow { font: 500 11px/1 var(--f-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin: 0; }
+h1 { font: italic 500 clamp(40px, 6.4vw, 70px)/0.98 var(--f-display); margin: 12px 0 12px; letter-spacing: -0.01em; text-wrap: balance; }
+.dek { max-width: 70ch; color: var(--ink-2); margin: 0; font-size: 15.5px; }
+.dek b { color: var(--ink); font-weight: 600; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; justify-content: space-between; margin-top: 26px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.chip, .seg button, .rel-chip {
+  font: 500 12.5px/1 var(--f-body); color: var(--ink-2); background: transparent;
+  border: 1px solid var(--rule); border-radius: 999px; padding: 7px 12px; cursor: pointer;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+.chip:hover, .seg button:hover, .rel-chip:hover { border-color: var(--muted); color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--sky); border-color: var(--ink); }
+.chip .n { font-family: var(--f-mono); font-size: 11px; opacity: .7; margin-left: 4px; }
+.toggles { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 999px; padding: 2px; }
+.seg button { border: 0; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px; }
+.seg button[aria-pressed="true"] { background: var(--raised); color: var(--ink); }
+.seg svg { width: 13px; height: 13px; }
+.find { position: relative; display: inline-flex; }
+.find svg { position: absolute; left: 11px; top: 50%; width: 13px; height: 13px; margin-top: -6.5px; color: var(--muted); pointer-events: none; }
+.find input {
+  font: 400 13px/1 var(--f-body); color: var(--ink); background: var(--panel);
+  border: 1px solid var(--rule); border-radius: 999px; padding: 8px 12px 8px 31px; width: 200px;
+}
+.find input::placeholder { color: var(--muted); }
+.find input[aria-invalid="true"] { border-color: var(--gold); }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 26px; margin-top: 16px; font-size: 12.5px; color: var(--ink-2); align-items: center; }
+.legend .item { display: inline-flex; align-items: center; gap: 8px; }
+.legend svg { flex: none; overflow: visible; }
+
+.chart-shell { position: relative; margin-top: 16px; border: 1px solid var(--rule); border-radius: 16px; background: var(--panel); overflow: hidden; }
+.scroller { overflow-x: auto; overscroll-behavior-x: contain; }
+#chart { display: block; }
+.caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; padding: 10px 16px 12px; border-top: 1px solid var(--rule-soft); font-size: 12px; color: var(--muted); }
+.scroll-hint { display: none; }
+@media (max-width: 1040px) { .scroll-hint { display: inline; } }
+
+/* chart */
+.starfield { opacity: var(--starfield); transition: opacity .3s; }
+.starfield circle { fill: var(--ink); }
+.era-band { fill: var(--era); }
+.era-name { font: 500 10px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; fill: var(--muted); }
+.axis-band { fill: var(--band); stroke: var(--rule); stroke-width: 1; }
+.tick-label { font: 400 10.5px/1 var(--f-mono); fill: var(--muted); }
+.tick { stroke: var(--rule); stroke-width: 1; }
+.now-label { font: 500 10px/1 var(--f-mono); letter-spacing: .1em; fill: var(--gold); }
+.now-mark { fill: var(--gold); }
+.pre-label { font: 500 9.5px/1 var(--f-mono); letter-spacing: .16em; fill: var(--muted); }
+.break { stroke: var(--muted); stroke-width: 1.2; }
+.span { fill: var(--gold-span); }
+.span-range { fill: none; stroke: var(--gold); stroke-width: 1; stroke-dasharray: 2 3; }
+.ms-d { fill: var(--gold); stroke: var(--panel); stroke-width: 1.5; transition: transform .15s; transform-box: fill-box; transform-origin: center; }
+.ms-hit { fill: transparent; cursor: help; }
+.ms.hot .ms-d, .ms:hover .ms-d { transform: scale(1.5); }
+.edge { fill: none; stroke: var(--ink-2); stroke-width: 1; opacity: .2; transition: opacity .2s; }
+.edge.drew { stroke-dasharray: 4 4; }
+.edge.kin { stroke-dasharray: 1 4; stroke-linecap: round; }
+.edge.hot { stroke: var(--gold); opacity: .95; stroke-width: 1.4; }
+.edge.fam { opacity: .6; }
+.edge.cold { opacity: .05; }
+.stem { stroke: var(--rule); stroke-width: 1; }
+.foot { fill: var(--muted); }
+.dot { fill: var(--ink); stroke: var(--panel); stroke-width: 2; transform-box: fill-box; transform-origin: center; transition: transform .15s ease; }
+.dot.big { filter: var(--glow); }
+.dot.hist { fill: var(--panel); stroke: var(--ink-2); stroke-width: 1.5; }
+.dot.rough { fill: var(--ink); fill-opacity: .55; stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 1.6 1.6; }
+.halo { fill: none; stroke: var(--gold); stroke-width: 1.5; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.lbl { paint-order: stroke; stroke: var(--panel); stroke-width: 5px; stroke-linejoin: round; }
+.lbl .nm { font: 500 12.5px/1 var(--f-label); fill: var(--ink); }
+.lbl .dt { font: 400 10px/1 var(--f-mono); fill: var(--muted); }
+.hit { fill: transparent; cursor: pointer; }
+.item { transition: opacity .2s; outline: none; }
+.item:hover .dot, .item:focus-visible .dot { transform: scale(1.3); }
+.item:focus-visible .halo { opacity: 1; stroke-dasharray: 2 2; }
+.item.dim { opacity: .18; }
+.item.rel .halo { opacity: .8; }
+.item.rel .lbl .nm { fill: var(--gold); }
+.item.sel .dot { fill: var(--gold); stroke: var(--panel); fill-opacity: 1; stroke-dasharray: none; filter: var(--glow); }
+.item.sel .halo { opacity: 1; animation: rtt-pulse 1.2s ease-out 1; }
+.item.sel .stem { stroke: var(--gold); }
+.item.sel .lbl .nm { fill: var(--gold); font-weight: 600; }
+.item:hover .lbl .nm { text-decoration: underline; text-decoration-color: var(--muted); }
+@keyframes rtt-pulse { from { transform: scale(2.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.tip { position: absolute; left: 0; top: 0; pointer-events: none; width: max-content; max-width: 300px;
+  background: var(--raised); border: 1px solid var(--rule); border-radius: 12px; padding: 10px 12px 11px;
+  box-shadow: 0 10px 30px var(--shadow); font-size: 12.5px; line-height: 1.45; color: var(--ink-2); z-index: 5; }
+.tip strong { display: block; font: 600 15px/1.2 var(--f-body); color: var(--ink); }
+.tip .when { font: 400 11px/1.4 var(--f-mono); color: var(--gold); margin: 2px 0 6px; display: block; }
+.tip .foll { display: block; margin-top: 6px; color: var(--muted); font-size: 11.5px; }
+
+/* list view */
+.listwrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px; }
+th { text-align: left; font: 500 10.5px/1 var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 14px 14px 10px; border-bottom: 1px solid var(--rule); }
+td { padding: 10px 14px; border-bottom: 1px solid var(--rule-soft); color: var(--ink-2); vertical-align: top; }
+td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
+td.when { font-family: var(--f-mono); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+tbody tr { cursor: pointer; }
+tbody tr:hover td { background: var(--rule-soft); }
+tbody tr[aria-selected="true"] td { background: var(--gold-soft); }
+tbody tr[aria-selected="true"] td:first-child { color: var(--gold); }
+
+/* detail */
+.detail { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 28px 44px; margin-top: 20px;
+  padding: clamp(18px, 3vw, 30px); border-radius: 16px; background: var(--panel); border: 1px solid var(--rule); }
+@media (max-width: 820px) { .detail { grid-template-columns: minmax(0, 1fr); } }
+.detail > div { min-width: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font: 400 12px/1.3 var(--f-mono); color: var(--muted); }
+.fam-tag { border: 1px solid var(--rule); border-radius: 999px; padding: 4px 9px; color: var(--ink-2); font-family: var(--f-body); font-size: 12px; }
+.detail h2 { font: 600 clamp(32px, 4.4vw, 46px)/1.02 var(--f-display); margin: 10px 0 4px; text-wrap: balance; }
+.detail .when-big { font: 500 13.5px/1.4 var(--f-mono); color: var(--gold); margin: 0 0 6px; }
+.kicker { font: 500 10.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 22px 0 9px; }
+.story { font-size: 16.5px; line-height: 1.6; color: var(--ink); max-width: 62ch; margin: 0; }
+.story.small { font-size: 14.5px; color: var(--ink-2); }
+.moments { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-left: 1px solid var(--rule); }
+.moments li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; padding: 6px 0 6px 14px; position: relative; color: var(--ink-2); font-size: 14px; line-height: 1.45; cursor: default; }
+.moments li::before { content: ""; position: absolute; left: -4px; top: 12px; width: 7px; height: 7px; background: var(--gold); transform: rotate(45deg); }
+.moments li:hover, .moments li:focus-visible { color: var(--ink); }
+.moments .yr { font: 500 12px/1.6 var(--f-mono); color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.eras { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 13.5px; display: grid; gap: 3px; }
+.eras li::marker { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+dl { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin: 0; }
+dt { font: 500 10.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+dd { margin: 0; color: var(--ink-2); }
+dd .src { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.rels { display: flex; flex-wrap: wrap; gap: 6px; }
+.rel-chip { padding: 6px 10px; }
+.rel-chip .k { color: var(--muted); font-size: 11px; margin-left: 4px; }
+.none { color: var(--muted); font-size: 13px; }
+.srcs { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13.5px; }
+a { color: var(--gold); text-decoration: none; border-bottom: 1px solid var(--gold-soft); }
+a:hover { border-bottom-color: var(--gold); }
+.links { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 22px; font-size: 13.5px; }
+.links small { color: var(--muted); font-size: 11.5px; }
+
+/* the world today */
+.panel { margin-top: 20px; padding: clamp(18px, 3vw, 30px); border-radius: 16px; background: var(--panel); border: 1px solid var(--rule); }
+.panel h3 { font: 600 28px/1.1 var(--f-display); margin: 0; }
+.panel .sub { color: var(--muted); font-size: 13px; margin: 4px 0 18px; }
+.bars { display: grid; gap: 4px; }
+.bar-row { display: grid; grid-template-columns: minmax(120px, 210px) minmax(0, 1fr) 118px; gap: 14px; align-items: center;
+  padding: 6px 8px; margin: 0 -8px; border-radius: 8px; border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 13.5px; text-align: left; }
+button.bar-row { cursor: pointer; }
+button.bar-row:hover { background: var(--rule-soft); color: var(--ink); }
+.bar-row .track { height: 8px; border-radius: 4px; background: var(--rule-soft); overflow: hidden; }
+.bar-row .fill { height: 100%; border-radius: 4px; background: var(--bar); }
+.bar-row.sel .fill { background: var(--gold); }
+.bar-row.sel { color: var(--ink); }
+.bar-row .val { font: 400 12px/1 var(--f-mono); color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .bar-row { grid-template-columns: minmax(0, 1fr) 96px; } .bar-row .track { grid-column: 1 / -1; grid-row: 2; } }
+.panel .src-line { font-size: 12px; color: var(--muted); margin: 14px 0 0; }
+
+/* sources and method */
+.method { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px 44px; }
+@media (max-width: 820px) { .method { grid-template-columns: minmax(0, 1fr); } }
+.method h4 { font: 500 10.5px/1 var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.method ul { margin: 0; padding-left: 18px; display: grid; gap: 7px; color: var(--ink-2); font-size: 14px; max-width: 64ch; }
+.method .fs { list-style: none; padding: 0; font-size: 12.5px; gap: 5px; }
+.method .fs b { color: var(--ink); font-weight: 500; }
+
+footer { margin-top: 26px; font-size: 12px; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">World religions · An interactive timeline</p>
+    <h1>Religions Through Time</h1>
+    <p class="dek"><span id="count">44</span> religions on one line of time, from the Aboriginal Dreaming to Falun Gong. Stars <b>above the line</b> were started by a founding teacher or prophet. Stars <b>below</b> grew gradually out of a people's traditions. Tap any star to see how it came out, its key moments, and what grew from it.</p>
+  </header>
+
+  <div class="controls">
+    <div class="chips" id="chips" role="group" aria-label="Highlight a family of religions"></div>
+    <div class="toggles">
+      <label class="find"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="10.8" y1="10.8" x2="14.5" y2="14.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <input id="find" type="search" list="find-list" placeholder="Find a religion" aria-label="Find a religion" autocomplete="off">
+      </label>
+      <datalist id="find-list"></datalist>
+      <div class="seg" role="group" aria-label="Time scale">
+        <button type="button" id="sc-stretch" aria-pressed="true">Recent stretched</button>
+        <button type="button" id="sc-true" aria-pressed="false">True to time</button>
+      </div>
+      <div class="seg" role="group" aria-label="View">
+        <button type="button" id="v-time" aria-pressed="true">Timeline</button>
+        <button type="button" id="v-list" aria-pressed="false">List</button>
+      </div>
+      <div class="seg" role="group" aria-label="Theme">
+        <button type="button" id="th-night" aria-pressed="true"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.5 1.8a6.3 6.3 0 1 0 3.7 10.4A5.2 5.2 0 0 1 10.5 1.8z" fill="currentColor"/></svg>Night</button>
+        <button type="button" id="th-day" aria-pressed="false"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.2" fill="currentColor"/><g stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="8" y1="0.8" x2="8" y2="2.6"/><line x1="8" y1="13.4" x2="8" y2="15.2"/><line x1="0.8" y1="8" x2="2.6" y2="8"/><line x1="13.4" y1="8" x2="15.2" y2="8"/><line x1="2.9" y1="2.9" x2="4.2" y2="4.2"/><line x1="11.8" y1="11.8" x2="13.1" y2="13.1"/><line x1="2.9" y1="13.1" x2="4.2" y2="11.8"/><line x1="11.8" y1="4.2" x2="13.1" y2="2.9"/></g></svg>Day</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend" aria-label="How to read the chart">
+    <span class="item"><svg width="14" height="18" viewBox="0 0 14 18"><line x1="7" y1="17" x2="7" y2="6" stroke="var(--muted)"/><circle cx="7" cy="5" r="4" fill="var(--ink)"/></svg>Above: founded by a teacher or prophet</span>
+    <span class="item"><svg width="14" height="18" viewBox="0 0 14 18"><line x1="7" y1="1" x2="7" y2="12" stroke="var(--muted)"/><circle cx="7" cy="13" r="4" fill="var(--ink)"/></svg>Below: grew out of a people's traditions</span>
+    <span class="item"><svg width="66" height="20" viewBox="0 0 66 20"><circle cx="9" cy="10" r="9" fill="var(--ink)"/><circle cx="29" cy="10" r="7" fill="var(--ink)"/><circle cx="45" cy="10" r="5.2" fill="var(--ink)"/><circle cx="58" cy="10" r="3.8" fill="var(--ink)"/></svg>Followers today: over 1 bn · 100 m+ · 1 m+ · under 1 m</span>
+    <span class="item"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="var(--panel)" stroke="var(--ink-2)" stroke-width="1.5"/></svg>No longer practised</span>
+    <span class="item"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="var(--ink)" fill-opacity=".55" stroke="var(--ink)" stroke-width="1.2" stroke-dasharray="1.6 1.6"/></svg>Not reliably counted</span>
+    <span class="item"><svg width="88" height="10" viewBox="0 0 88 10"><line x1="0" y1="5" x2="24" y2="5" stroke="var(--ink-2)"/><line x1="32" y1="5" x2="56" y2="5" stroke="var(--ink-2)" stroke-dasharray="4 4"/><line x1="64" y1="5" x2="88" y2="5" stroke="var(--ink-2)" stroke-dasharray="1 4" stroke-linecap="round"/></svg>Grew out of · drew on · shares roots with</span>
+    <span class="item"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 1 l5 5 l-5 5 l-5 -5z" fill="var(--gold)"/></svg>Key moments of the selected religion</span>
+  </div>
+
+  <section class="chart-shell" id="shell">
+    <div class="scroller" id="scroller">
+      <svg id="chart" role="img" aria-label="Timeline of religions by when they appeared"></svg>
+    </div>
+    <div class="listwrap" id="listwrap" hidden>
+      <table>
+        <thead><tr><th scope="col">Religion</th><th scope="col">Came out</th><th scope="col">How</th><th scope="col">Family</th><th scope="col">Where it began</th><th scope="col">Followers today</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="tip" id="tip" hidden></div>
+    <div class="caption" id="caption">
+      <span id="scale-note">Time is stretched toward the present so the crowded last two centuries have room. Prehistoric traditions sit in the block on the left.</span>
+      <span class="scroll-hint">Scroll sideways to see the whole timeline.</span>
+    </div>
+  </section>
+
+  <section class="detail" id="detail" aria-live="polite"></section>
+
+  <section class="panel" aria-labelledby="world-h">
+    <h3 id="world-h">The world today</h3>
+    <p class="sub" id="world-sub">Share of the world's population by religion</p>
+    <div class="bars" id="bars"></div>
+    <p class="src-line" id="world-src"></p>
+  </section>
+
+  <section class="panel" aria-labelledby="method-h">
+    <h3 id="method-h">Sources and method</h3>
+    <p class="sub">How the chart is built, and where the facts come from.</p>
+    <div class="method">
+      <div>
+        <h4>How to read the placement</h4>
+        <ul>
+          <li>Each star sits at the earliest firm evidence for the religion. Traditions older than any record sit in the undated block on the left.</li>
+          <li>Debated or gradual beginnings appear as a dotted outline on the time band when you select the religion; the gold band shows how long it has lasted, or lasted.</li>
+          <li>Above the band: started by a founding teacher or prophet. Below: grew out of a people's traditions. Borderline cases are explained in each religion's story.</li>
+          <li>Star sizes group followers into four classes, because most counts are estimates. Hollow stars are religions no longer practised.</li>
+          <li>Lines mean grew out of (solid), drew on (dashed) or shares roots with (dotted). They describe historical relationships; they don't judge any faith's own account of its origin.</li>
+          <li>The texts are AI-assisted summaries of general historical knowledge. Key dates and figures were spot-checked, and every link was checked, in October 2026. Dates are approximate and many are debated.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Sources</h4>
+        <ul>
+          <li id="m-world"></li>
+          <li>Each religion's card lists further reading, starting with its main Wikipedia article.</li>
+          <li>Where a follower count has a specific source, it is named on the card:</li>
+        </ul>
+        <ul class="fs" id="m-followers"></ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>Religions Through Time · October 2026</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // Filled in by scripts/build.mjs from data/religions.json (and, for a private build, a notes map).
+  var DATA = {"families":[{"id":"abr","name":"Abrahamic"},{"id":"ira","name":"Iranian & Gnostic"},{"id":"dha","name":"Dharmic"},{"id":"eas","name":"East Asian"},{"id":"ind","name":"Indigenous & folk"},{"id":"anc","name":"Ancient"},{"id":"nrm","name":"New movements"},{"id":"non","name":"Without religion"}],"world":{"source":{"title":"Pew Research Center: How the Global Religious Landscape Changed From 2010 to 2020 (June 2025)","url":"https://www.pewresearch.org/religion/2025/06/09/how-the-global-religious-landscape-changed-from-2010-to-2020/"},"year":2020,"groups":[{"name":"Christians","share":28.8,"people":"2.3 bn","id":"christianity"},{"name":"Muslims","share":25.6,"people":"2.0 bn","id":"islam"},{"name":"Religiously unaffiliated","share":24.2,"people":"1.9 bn","id":"atheism"},{"name":"Hindus","share":14.9,"people":"1.2 bn","id":"hinduism"},{"name":"Buddhists","share":4.1,"people":"324 m","id":"buddhism"},{"name":"Other religions","share":2.2,"people":"~170 m","id":null},{"name":"Jews","share":0.2,"people":"14.8 m","id":"judaism"}]},"religions":[{"id":"aboriginal","label":"Aboriginal Dreaming","name":"Aboriginal Australian religion","fam":"ind","pre":0,"ds":"50,000+ yrs ago","date":"50,000+ years ago (oral tradition)","how":"grew","size":"s","status":"Living","story":"No founder. The Dreaming grew with the first peoples of Australia over more than 50,000 years. It is handed down through song, dance, art and ceremony, each tied to a particular stretch of country.","beliefs":"Ancestral beings shaped the land in the Dreaming and remain present in it. Law, kinship and ceremony come from them, and songlines map the country.","texts":"None (oral tradition, song, dance and art)","followers":"Tens of thousands practise traditional forms","parents":[],"wiki":"Australian_Aboriginal_religion_and_mythology","origin":"Australia; people have lived there at least 50,000 years","founders":"no founder; ancestral beings (e.g. the Rainbow Serpent, Baiame, Bunjil, the Wandjina); Elders as holders of Law","branches":"— (hundreds of distinct local traditions; Torres Strait Islanders have their own)","eras":["Deep time (50,000+ years ago – 1788)","Invasion and frontier (1788–1890s)","Protection and assimilation (1890s–1960s)","Land rights (1960s–1990s)","Recognition and contest (2000s–present)"],"milestones":[[1788,"British First Fleet arrives, treating the land as unowned",false],[1910,"Removal of children begins, the Stolen Generations era",true],[1985,"Uluru handed back to its Anangu traditional owners",false],[1992,"Mabo decision rejects terra nullius",false],[2008,"National Apology to the Stolen Generations",false]],"sources":[["Wikipedia: Australian Aboriginal religion and mythology","https://en.wikipedia.org/wiki/Australian_Aboriginal_religion_and_mythology"],["Wikipedia: Dreamtime","https://en.wikipedia.org/wiki/Dreamtime"],["Wikipedia: Stolen Generations","https://en.wikipedia.org/wiki/Stolen_Generations"]],"followersSource":"Australian census 2021: 7,887 people named Aboriginal traditional religion; many more combine it with Christianity"},{"id":"african","label":"African traditional","name":"African traditional religions","fam":"ind","pre":1,"ds":"prehistoric","date":"Prehistoric","how":"grew","size":"m","status":"Living","story":"No founder. Hundreds of separate traditions grew with Africa's peoples (Yoruba, Akan, Igbo, Zulu and many more). Elders, diviners and healers pass them down by word of mouth.","beliefs":"Usually a distant creator god, with lesser gods and spirits closer to people. Ancestors stay part of the community; ritual keeps the world in balance.","texts":"None (oral; the Yoruba Ifá verses are a large oral corpus)","followers":"Tens of millions (often blended with Christianity or Islam)","parents":[],"wiki":"Traditional_African_religions","origin":"Sub-Saharan Africa, prehistoric","founders":"No founder; carried by priests, diviners, spirit mediums, healers and sacred rulers","branches":"Hundreds of ethnic traditions, such as Yoruba, Akan, Igbo, Fon, Kongo, Dogon and Zulu","eras":["Deep roots (prehistoric – c. 500 CE)","Kingdoms and sacred rulers (c. 500 – 1500 CE)","Atlantic trade and missions (c. 1450 – 1800)","Colonialism and resistance (c. 1800 – 1960)","Independence to today (1960 – present)"],"milestones":[[1100,"Ile-Ife bronze heads begin, linked to Yoruba kingship",true],[1509,"Afonso I of Kongo makes Catholicism the court religion",false],[1856,"Nongqawuse and the Xhosa cattle-killing",false],[1969,"John Mbiti's African Religions and Philosophy",false],[2005,"Osun-Osogbo Sacred Grove becomes a World Heritage Site",false]],"sources":[["Wikipedia: Traditional African religions","https://en.wikipedia.org/wiki/Traditional_African_religions"],["Wikipedia: Yoruba religion","https://en.wikipedia.org/wiki/Yoruba_religion"]]},{"id":"native","label":"Native American","name":"Native American religions","fam":"ind","pre":2,"ds":"prehistoric","date":"Prehistoric","how":"grew","size":"s","rough":true,"status":"Living","story":"No founder. Each of hundreds of Native nations developed its own ceremonies and stories over thousands of years, rooted in its own land.","beliefs":"The world is alive with spirit. Right relationship with land, animals and ancestors; ceremonies such as the sweat lodge, Sun Dance and vision quest.","texts":"None (oral tradition)","followers":"Unmeasured; hundreds of distinct traditions","parents":[],"wiki":"Native_American_religions","origin":"North America, prehistoric","founders":"No founder; prophets such as Handsome Lake (Seneca), Wovoka (Paiute) and Black Elk (Lakota)","branches":"Nation-specific traditions (Lakota, Hopi, Navajo, Haudenosaunee and hundreds more) plus pan-tribal movements such as the Native American Church","eras":["Ancient roots (before c. 1500 CE)","Contact and missions (1500s – 1700s)","Prophets and the Ghost Dance (1799 – 1890)","Suppression and adaptation (1880s – 1960s)","Revival and legal protection (1960s – present)"],"milestones":[[1142,"Earliest proposed date for the Haudenosaunee Great Law of Peace",true],[1799,"Handsome Lake's visions found the Longhouse religion",false],[1890,"Wounded Knee Massacre after Ghost Dance fears",false],[1918,"Native American Church incorporated in Oklahoma",false],[1978,"American Indian Religious Freedom Act passed",false]],"sources":[["Wikipedia: Native American religions","https://en.wikipedia.org/wiki/Native_American_religions"],["Wikipedia: American Indian Religious Freedom Act","https://en.wikipedia.org/wiki/American_Indian_Religious_Freedom_Act"],["Wikipedia: Ghost Dance","https://en.wikipedia.org/wiki/Ghost_Dance"]]},{"id":"korean","label":"Korean shamanism","name":"Korean shamanism (Muism)","fam":"eas","pre":3,"ds":"prehistoric","date":"Prehistoric","how":"grew","size":"m","rough":true,"status":"Living","story":"No founder. Shamanic rites go back to Korea's earliest kingdoms. Shamans, called mudang and mostly women, inherit the role or are called to it through a spirit illness.","beliefs":"Gods and spirits shape daily life. Shamans perform gut rituals to heal, bring luck and settle the restless dead.","texts":"None (oral tradition)","followers":"Unmeasured; widely consulted in South Korea","parents":[],"wiki":"Korean_shamanism","origin":"Korean peninsula, prehistoric","founders":"No founder; the mythic founder-king Dangun, Princess Bari (in myth, ancestress of shamans), modern mudang such as Kim Keum-hwa (1931–2019)","branches":"No formal branches; regional styles of spirit-possessed and hereditary shamans","eras":["Ancient roots (prehistoric–668 CE)","Goryeo (918–1392)","Joseon (1392–1910)","Colonial era (1910–1945)","Division and development (1945–1980s)","Contemporary South Korea (1990s–present)"],"milestones":[[-2333,"Dangun myth places the founding of Gojoseon in this year",true],[1392,"Joseon's Neo-Confucian state ranks mudang in the lowest class",false],[1860,"Donghak movement emerges from late Joseon popular religion",false],[1970,"Saemaul Undong campaigns against shamanic shrines and gut",false],[2009,"Jeju wind-goddess rite listed as UNESCO heritage",false]],"sources":[["Wikipedia: Korean shamanism","https://en.wikipedia.org/wiki/Korean_shamanism"],["Wikipedia: Mu (shaman)","https://en.wikipedia.org/wiki/Mu_%28shaman%29"],["Wikipedia: Gut (ritual)","https://en.wikipedia.org/wiki/Gut_%28ritual%29"]]},{"id":"shinto","label":"Shinto","name":"Shinto","fam":"eas","pre":4,"ds":"prehistoric","date":"Prehistoric; myths written down 712–720 CE","how":"grew","size":"l","rough":true,"status":"Living","story":"No founder. Worship of kami at sacred rocks, trees and mountains goes back to prehistoric Japan. The imperial court wrote its myths down in the Kojiki (712) and Nihon Shoki (720), and the name Shinto came into use to set it apart from Buddhism.","beliefs":"Kami (spirits or gods) live in nature, places and ancestors. Purity and purification; shrine rituals and festivals; little formal doctrine.","texts":"Kojiki and Nihon Shoki (myth-histories, not scripture)","followers":"Most Japanese take part in rites; few identify only as Shinto","parents":[],"wiki":"Shinto","origin":"Japan; prehistoric roots, first written myths 712–720 CE","founders":"No founder; the imperial house (in myth descended from the sun goddess Amaterasu), Yoshida Kanetomo, Motoori Norinaga, Hirata Atsutane","branches":"Shrine Shinto, Imperial Household Shinto, Sect Shinto, folk Shinto; State Shinto existed 1868–1945","eras":["Prehistory and the Yamato state (to 710 CE)","Nara and Heian: the great blending (710–1185)","Medieval Japan (1185–1603)","Edo period (1603–1868)","Meiji to 1945: separation and State Shinto","Occupation and postwar Japan (1945–present)"],"milestones":[[712,"Kojiki ties the imperial house to Amaterasu",false],[1435,"Yoshida Kanetomo, founder of Yoshida Shinto, is born",false],[1730,"Motoori Norinaga, Kokugaku leader, is born",false],[1868,"Separation orders divide kami and buddhas; State Shinto era begins",false],[1945,"Shinto Directive ends state support for Shinto",false]],"sources":[["Wikipedia: Shinto","https://en.wikipedia.org/wiki/Shinto"],["Wikipedia: State Shinto","https://en.wikipedia.org/wiki/State_Shinto"],["Wikipedia: Shinbutsu-shūgō","https://en.wikipedia.org/wiki/Shinbutsu-sh%C5%ABg%C5%8D"]]},{"id":"mesopotamian","label":"Mesopotamia","name":"Mesopotamian religion","fam":"anc","y":-3500,"ds":"c. 3500 BCE","date":"c. 3500 BCE","end":79,"endLabel":"c. 79 CE, the last datable cuneiform tablet","how":"grew","size":"none","status":"Historical","story":"Grew in the first cities of Sumer, where each city had its patron god and temple. Cuneiform writing (c. 3200 BCE) recorded its myths. It faded under Persian and Greek rule.","beliefs":"Humans were made to serve the gods (An, Enlil, Enki, Inanna or Ishtar, Marduk). Temple cities and ziggurats, omens, and a gloomy underworld for everyone.","texts":"Enuma Elish, Epic of Gilgamesh, Atrahasis","followers":"None (historical)","parents":[],"wiki":"Ancient_Mesopotamian_religion","origin":"Sumer, Akkad, Babylon and Assyria (modern Iraq), c. 3500 BCE","founders":"no founder; Enheduanna (priestess-poet), Hammurabi, Ashurbanipal, Nebuchadnezzar II","branches":"— (Sumerian, Babylonian and Assyrian phases)","eras":["Ubaid and Uruk periods (c. 5500–2900 BCE)","Sumer and Akkad (c. 2900–2004 BCE)","Old Babylonian and Kassite periods (c. 1900–1155 BCE)","Assyrian and Neo-Babylonian empires (c. 911–539 BCE)","Decline and rediscovery (539 BCE – today)"],"milestones":[[-3300,"Cuneiform writing appears, first for temple accounts",true],[-2334,"Sargon of Akkad unites the region",true],[-539,"Cyrus of Persia takes Babylon",false],[79,"Last firmly datable cuneiform tablet, from Uruk",false],[1872,"George Smith reads a Babylonian flood story",false]],"sources":[["Wikipedia: Ancient Mesopotamian religion","https://en.wikipedia.org/wiki/Ancient_Mesopotamian_religion"],["Wikipedia: Epic of Gilgamesh","https://en.wikipedia.org/wiki/Epic_of_Gilgamesh"]]},{"id":"egyptian","label":"Ancient Egypt","name":"Ancient Egyptian religion","fam":"anc","y":-3100,"ds":"c. 3100 BCE","date":"c. 3100 BCE","end":537,"endLabel":"c. 537 CE, when the temple at Philae closed","how":"grew","size":"none","status":"Historical","story":"Took shape from older local cults as the first pharaohs unified Egypt (c. 3100 BCE). It lasted more than 3,000 years until Christianity replaced it.","beliefs":"The pharaoh upholds ma'at, the cosmic order. Gods such as Ra, Osiris, Isis and Horus; in the afterlife the heart is weighed against the feather of ma'at.","texts":"Pyramid Texts, Coffin Texts, Book of the Dead","followers":"Historical; a small Kemetic revival","parents":[],"wiki":"Ancient_Egyptian_religion","origin":"Nile valley, c. 3100 BCE (older prehistoric roots)","founders":"no founder; Imhotep (later deified), Akhenaten, the priesthoods of Ra and Amun","branches":"local theologies (Heliopolis, Hermopolis, Memphis, Thebes); Atenism","eras":["Early Dynastic and Old Kingdom (c. 3100–2181 BCE)","Middle and New Kingdoms (c. 2055–1069 BCE)","Late, Ptolemaic and Roman periods (664 BCE – 4th c. CE)","Christianization (4th–6th c. CE)","Rediscovery and revival (1798–today)"],"milestones":[[-3100,"Egypt unified; local gods form a shared pantheon",true],[-1353,"Akhenaten promotes the Aten almost alone",true],[394,"Last known hieroglyphic inscription carved at Philae",false],[1822,"Champollion deciphers hieroglyphs",false],[1988,"Kemetic Orthodoxy founded in the US",false]],"sources":[["Wikipedia: Ancient Egyptian religion","https://en.wikipedia.org/wiki/Ancient_Egyptian_religion"],["Wikipedia: Kemetism","https://en.wikipedia.org/wiki/Kemetism"]]},{"id":"hinduism","label":"Hinduism","name":"Hinduism","fam":"dha","y":-1500,"ds":"c. 1500 BCE","date":"Roots c. 1500 BCE (Vedic period)","range":[-1500,-500],"rangeLabel":"The Vedic period, c. 1500–500 BCE","how":"grew","size":"xl","status":"Living","story":"No founder and no single starting point. It grew from the Vedic religion recorded in the Vedas (c. 1500–1200 BCE), possibly with Indus Valley roots, and absorbed many local traditions. The name Hinduism came much later.","beliefs":"Brahman and the true self (ātman); karma, rebirth and liberation (moksha); dharma. Many deities, often seen as faces of one divine.","texts":"Vedas, Upanishads, Bhagavad Gita, Ramayana, Mahabharata, Puranas","followers":"~1.2 billion","parents":[],"wiki":"Hinduism","origin":"Indian subcontinent; roots in the Vedic period, c. 1500 BCE","founders":"no single founder; the Vedic seers (rishis), Adi Shankara, Ramanuja, Vivekananda, Gandhi","branches":"Vaishnavism, Shaivism, Shaktism, Smartism","eras":["Indus Valley and the Vedic period (c. 2600–500 BCE)","Upanishads and the renouncers (c. 800–200 BCE)","Epics and the classical synthesis (c. 400 BCE – 550 CE)","Bhakti, Vedanta and Tantra (c. 550–1300 CE)","Sultanates, Mughals and the northern saints (c. 1200–1750)","Colonial rule and reform (c. 1757–1947)","Independence and the modern era (1947–present)"],"milestones":[[-1500,"Rigveda composed orally, hymns to Indra and Agni",true],[-700,"Oldest Upanishads turn to Brahman, atman and moksha",true],[320,"Gupta Empire: stone temples, Puranas and image worship spread",true],[800,"Adi Shankara systematizes Advaita Vedanta",true],[1893,"Vivekananda presents Hinduism at Chicago Parliament of Religions",false]],"sources":[["Wikipedia: Hinduism","https://en.wikipedia.org/wiki/Hinduism"],["Wikipedia: History of Hinduism","https://en.wikipedia.org/wiki/History_of_Hinduism"],["Wikipedia: Hindu philosophy","https://en.wikipedia.org/wiki/Hindu_philosophy"]],"followersSource":"Pew Research Center, 2025 report (2020 data)"},{"id":"greek","label":"Greek & Roman","name":"Greek and Roman religion","fam":"anc","y":-1500,"ds":"c. 1500 BCE","date":"c. 1500 BCE (Mycenaean Greece)","end":392,"endLabel":"391–392 CE, when Christian emperors banned sacrifice","how":"grew","size":"none","status":"Historical","story":"Grew from Minoan and Mycenaean cults; Zeus already appears on Linear B tablets. Homer and Hesiod gave Greeks a shared mythology, and Rome adopted many Greek gods.","beliefs":"The Olympian gods were honoured with sacrifice and civic festivals. Correct practice mattered more than belief; oracles and mystery cults.","texts":"No scripture; Homer and Hesiod as shared myth","followers":"Historical; a small Hellenic revival","parents":[],"wiki":"Ancient_Greek_religion","origin":"Greece and Rome, c. 1500 BCE (Mycenaean Greece)","founders":"no founder; Homer and Hesiod (myths), Augustus (Roman revival), Julian (last pagan emperor)","branches":"civic cult, mystery cults, Roman state religion, imperial cult, philosophical religion","eras":["Minoan and Mycenaean (c. 2000–1100 BCE)","Archaic Greece (c. 800–480 BCE)","Classical Greece (480–323 BCE)","Hellenistic world and Roman Republic (c. 509–31 BCE)","Roman Empire (31 BCE – 312 CE)","Christianization (312 – 6th c. CE)","Legacy and revival (Renaissance – today)"],"milestones":[[-700,"Homer and Hesiod give the gods their familiar stories",true],[-399,"Socrates executed, partly on a charge of impiety",false],[-12,"Augustus becomes pontifex maximus and restores temples",false],[392,"Theodosius I bans sacrifice and temple worship",false],[2017,"Greece legally recognizes Hellenic religion",false]],"sources":[["Wikipedia: Ancient Greek religion","https://en.wikipedia.org/wiki/Ancient_Greek_religion"],["Wikipedia: Religion in ancient Rome","https://en.wikipedia.org/wiki/Religion_in_ancient_Rome"],["Wikipedia: Hellenism (modern religion)","https://en.wikipedia.org/wiki/Hellenism_%28modern_religion%29"]]},{"id":"meso","label":"Aztec & Maya","name":"Mesoamerican religion (Aztec and Maya)","fam":"anc","y":-1500,"ds":"c. 1500 BCE","date":"c. 1500 BCE (the Olmec)","end":1521,"endLabel":"1521, the Spanish conquest of the Aztecs (the last Maya kingdom fell in 1697)","how":"grew","size":"none","status":"Historical","story":"Began with the Olmec (c. 1500 BCE) and passed to the Maya, Zapotec and Aztecs, who shared gods, calendars and ball-game rituals.","beliefs":"Gods of sun, rain, maize and the feathered serpent. Cyclical time and sacred calendars; blood offerings, including human sacrifice, repaid the gods.","texts":"Popol Vuh (Maya); surviving codices","followers":"Historical; survives blended into folk Catholicism","parents":[],"wiki":"Mesoamerican_religion","origin":"Mexico and Central America, c. 1500 BCE (Olmec)","founders":"No founder; gods such as Quetzalcoatl (Maya Kukulkan), Tlaloc (Maya Chaak) and Huitzilopochtli","branches":"Olmec, Zapotec, Teotihuacan, Maya, Mixtec and Aztec (Mexica)","eras":["Olmec beginnings (c. 1500 – 400 BCE)","Classic cities (c. 500 BCE – 900 CE)","The Aztec (1325 – 1519)","Conquest (1519 – 1697)","Syncretism and survival (1531 – today)"],"milestones":[[-1500,"Olmec build ceremonial centres at San Lorenzo and La Venta",true],[-100,"Teotihuacan rises and builds the Pyramids of the Sun and Moon",true],[1325,"Mexica found Tenochtitlan",true],[1521,"Cortes and allies take Tenochtitlan",false],[1996,"Guatemala's peace accords recognise Maya spirituality",false]],"sources":[["Wikipedia: Mesoamerican religion","https://en.wikipedia.org/wiki/Mesoamerican_religion"],["Wikipedia: Aztec religion","https://en.wikipedia.org/wiki/Aztec_religion"]]},{"id":"chinesefolk","label":"Chinese folk religion","name":"Chinese folk religion","fam":"eas","y":-1250,"ds":"c. 1250 BCE","date":"Prehistoric roots; first records c. 1250 BCE (Shang oracle bones)","how":"grew","size":"l","status":"Living","story":"No founder. Ancestor worship and many local gods go back to prehistoric China. Oracle bones from the Shang dynasty (c. 1250 BCE) are its first written records.","beliefs":"Honour the ancestors and many gods (Mazu, the Kitchen God, the City God). Feng shui, divination and temple festivals; it blends freely with Taoism and Buddhism.","texts":"None (local tradition and temple practice)","followers":"~400 million+ (estimates vary)","parents":[],"wiki":"Chinese_folk_religion","origin":"China; prehistoric roots, with written records from the Shang dynasty c. 1250 BCE","founders":"No founder; widely worshipped figures include the Jade Emperor, Guan Yu (Guandi), Mazu, Guanyin, the Earth God (Tudigong) and City Gods","branches":"No formal branches; local temple cults, lineage ancestor cults, spirit-medium cults and organized salvationist sects such as Yiguandao","eras":["Prehistory and the Shang (to 1046 BCE)","Zhou and classical China (1046–221 BCE)","Early imperial China (221 BCE–960 CE)","Late imperial China (960–1911)","Modernization and attack (1898–1976)","Revival (1978–present)"],"milestones":[[-1250,"Shang oracle bones put questions to ancestors and the high god Di",true],[-3,"Mass worship of the Queen Mother of the West across north China",false],[1100,"Song court elevates popular gods such as the Jade Emperor",true],[1928,"Nationalist standards aim to abolish most cults and shrines",false],[2009,"Mazu belief and customs listed as UNESCO intangible heritage",false]],"sources":[["Wikipedia: Chinese folk religion","https://en.wikipedia.org/wiki/Chinese_folk_religion"],["Wikipedia: Religion in China","https://en.wikipedia.org/wiki/Religion_in_China"]]},{"id":"judaism","label":"Judaism","name":"Judaism","fam":"abr","y":-1200,"ds":"c. 1200 BCE","date":"c. 1200 BCE (Israelite religion); rabbinic Judaism after 70 CE","range":[-1200,-500],"rangeLabel":"Monotheism took shape gradually, c. 1200–500 BCE","how":"grew","size":"m","status":"Living","story":"Grew out of the religion of ancient Israel and Judah. Tradition traces it to Abraham's covenant and to Moses at Sinai. Historians see monotheism forming gradually, especially during the Babylonian exile (6th c. BCE). After the Temple fell in 70 CE, rabbinic Judaism took over.","beliefs":"One God made a covenant with Israel. Living by the Torah's commandments matters more than creed; hope for a messianic age.","texts":"Tanakh (Hebrew Bible), Talmud","followers":"~15.8 million (2024)","parents":[["mesopotamian","drew"]],"wiki":"Judaism","origin":"Ancient Israel and Judah (Levant); Israelite religion c. 1200–500 BCE, rabbinic Judaism after 70 CE","founders":"in tradition Abraham and Moses; later Ezra, Yohanan ben Zakkai, Judah ha-Nasi, Rashi, Maimonides","branches":"Rabbinic Judaism (Orthodox, Conservative/Masorti, Reform, Reconstructionist) and the small Karaite community","eras":["Israelite origins (c. 1200–587 BCE)","Exile and the Second Temple (587 BCE – 70 CE)","Rabbinic Judaism (70 – c. 1000 CE)","Medieval diaspora (c. 1000–1500)","Early modern period (c. 1500–1780)","Emancipation and new movements (c. 1780–1933)","Holocaust, Israel and the present (1933–today)"],"milestones":[[-1208,"Merneptah Stele gives earliest outside mention of Israel",true],[-587,"Babylon destroys the First Temple and deports Judah's elite",false],[70,"Rome destroys the Second Temple; rabbinic Judaism takes shape",false],[1492,"Jews expelled from Spain",false],[1948,"State of Israel declared on 14 May",false]],"sources":[["Wikipedia: Judaism","https://en.wikipedia.org/wiki/Judaism"],["Wikipedia: Jewish history","https://en.wikipedia.org/wiki/Jewish_history"],["Wikipedia: Jewish denominations","https://en.wikipedia.org/wiki/Jewish_denominations"]],"followersSource":"Jewish Agency for Israel, estimate for Rosh Hashanah 2024"},{"id":"zoroastrianism","label":"Zoroastrianism","name":"Zoroastrianism","fam":"ira","y":-1000,"ds":"c. 1500–500 BCE","date":"c. 1500–500 BCE (Zarathustra's date is debated)","range":[-1500,-500],"rangeLabel":"Zarathustra's date is debated: c. 1500–500 BCE","how":"founded","size":"s","status":"Living","story":"Founded by the prophet Zarathustra (Zoroaster) in ancient Iran or Central Asia. He reformed the old Indo-Iranian religion, which Vedic India also grew from. It became the faith of the Persian empires.","beliefs":"The wise lord Ahura Mazda against the destructive spirit Angra Mainyu. Good thoughts, good words, good deeds; a final judgment and renewal of the world.","texts":"Avesta (including Zarathustra's Gathas)","followers":"~100,000–200,000","parents":[["hinduism","kin"]],"wiki":"Zoroastrianism","origin":"Ancient Iran / Central Asia, c. 1500–500 BCE (Zarathustra's date debated)","founders":"Zarathustra (Zoroaster); Sasanian high priests such as Kartir","branches":"Parsi and Irani communities; Shahenshahi, Qadimi and Fasli calendar groups","eras":["Zarathustra and the Avestan age (c. 1500–550 BCE)","Achaemenid Persia (c. 550–330 BCE)","Seleucid and Parthian eras (330 BCE–224 CE)","The Sasanian state religion (224–651 CE)","Islamic conquest and minority life (633–19th c.)","The Parsis of India (8th c.–present)","The modern era (20th c.–today)"],"milestones":[[-1500,"Zarathustra's date is debated, placed as early as c. 1500 BCE",true],[-550,"Cyrus the Great founds the Achaemenid Empire",true],[224,"Ardashir I makes Zoroastrianism the Sasanian state religion",false],[642,"Arab victory at Nahavand; the last king dies in 651",false],[1742,"Iranshah sacred fire begins burning at Udvada",false]],"sources":[["Wikipedia: Zoroastrianism","https://en.wikipedia.org/wiki/Zoroastrianism"],["Wikipedia: Parsis","https://en.wikipedia.org/wiki/Parsis"]],"followersSource":"India census 2011 counted 57,264 Parsis; the worldwide figure is an estimate"},{"id":"polynesian","label":"Polynesian","name":"Polynesian religion","fam":"ind","y":-1000,"ds":"c. 1000 BCE","date":"c. 1000 BCE onward, with the settlement of the Pacific","how":"grew","size":"s","status":"Revived","story":"Carried by voyagers settling the Pacific from about 1000 BCE; each island group adapted the shared gods and stories. Missionaries replaced it in the 1800s (Hawai‘i abolished its kapu system in 1819), and it has been revived since the 1970s.","beliefs":"Gods such as Tangaroa, Tāne, Tū and Rongo; the demigod Māui. Mana (spiritual power) and tapu or kapu (sacred restriction) order life.","texts":"None (oral chants and genealogies)","followers":"Mostly replaced by Christianity; modern revivals","parents":[],"wiki":"Polynesian_mythology","origin":"Polynesia; voyagers spread it from Tonga and Samoa (c. 1000 BCE) to Aotearoa New Zealand (c. 1300 CE)","founders":"no founder; priests (tohunga, kahuna) and chiefs; later Ka‘ahumanu, Pōmare II, Māori prophets","branches":"regional traditions (Hawaiian, Māori, Tahitian, Samoan, Tongan, Rapa Nui); Māori prophetic churches","eras":["Settlement of the west (c. 1000 BCE – c. 900 CE)","Eastern voyages (c. 900–1300 CE)","Chiefs and priests (c. 1300–1790s)","Missions and the fall of the old order (1797–1840s)","Prophets and suppression (1860s–1960s)","Revival (1970s–present)"],"milestones":[[-900,"Lapita voyagers reach Tonga and Samoa",true],[1778,"Captain Cook reaches Hawai‘i",false],[1819,"Hawaiian kapu system ended by Ka‘ahumanu and Keōpūolani",false],[1907,"Tohunga Suppression Act outlaws traditional healers",false],[1976,"Hōkūle‘a sails to Tahiti, sparking Hawaiian Renaissance",false]],"sources":[["Wikipedia: Polynesian mythology","https://en.wikipedia.org/wiki/Polynesian_mythology"],["Wikipedia: Kapu","https://en.wikipedia.org/wiki/Kapu"],["Wikipedia: Māori religion","https://en.wikipedia.org/wiki/M%C4%81ori_religion"]]},{"id":"celtic","label":"Celtic","name":"Celtic religion","fam":"anc","y":-800,"ds":"c. 800 BCE","date":"c. 800 BCE (Hallstatt and La Tène cultures)","end":600,"endLabel":"c. 6th century CE, as Christianity spread","how":"grew","size":"none","status":"Historical","story":"The religion of Europe's Iron Age Celtic peoples. Rome suppressed the druids, and Christianity replaced it by about the 6th century. The Celts wrote almost nothing down themselves.","beliefs":"Many local gods (Lugh, Brigid, the Dagda, Cernunnos). Sacred groves, springs and lakes; druids as priests, judges and teachers.","texts":"None (known from Roman writers and medieval Irish and Welsh tales)","followers":"Historical; Druidry revival","parents":[],"wiki":"Ancient_Celtic_religion","origin":"Iron Age Gaul, Britain and Ireland, c. 800 BCE","founders":"no founder; the druids (priestly class); later Christian recorders in Ireland and Wales","branches":"— (Gaulish, British and Irish variants; Gallo-Roman fusion)","eras":["Hallstatt and La Tène (c. 800–50 BCE)","Roman conquest (58 BCE – 84 CE)","Gallo-Roman and Romano-British (1st–4th c. CE)","Ireland and conversion (5th–7th c. CE)","Medieval writing (c. 8th–14th c.)","Druid revival (18th c. – today)"],"milestones":[[-800,"Iron Age Celtic cultures spread across Europe",true],[-58,"Caesar conquers Gaul and describes the druids",false],[1160,"Irish monks record myths in the Book of Leinster",true],[1792,"Iolo Morganwg founds the Gorsedd of Bards",false],[1964,"Order of Bards, Ovates and Druids founded",false]],"sources":[["Wikipedia: Ancient Celtic religion","https://en.wikipedia.org/wiki/Ancient_Celtic_religion"],["Wikipedia: Modern Druidry","https://en.wikipedia.org/wiki/Modern_Druidry"]]},{"id":"atheism","label":"Atheism & humanism","name":"Atheism, agnosticism and humanism","fam":"non","y":-600,"ds":"c. 600 BCE","date":"Ideas from c. 600 BCE; organized humanism 19th–20th c.","how":"grew","size":"xl","status":"Living","story":"No founder. Doubt about the gods appears from about 600 BCE in ancient India (the Cārvāka school) and Greece (later Epicurus). It grew into modern atheism and secular humanism through the Enlightenment and the 19th and 20th centuries.","beliefs":"Atheism: no belief in gods. Agnosticism: whether gods exist can't be known. Secular humanism: ethics based on reason, science and human welfare.","texts":"No scripture; e.g. the Humanist Manifestos (1933, 1973, 2003)","followers":"~1.9 billion religiously unaffiliated (not all atheists)","parents":[],"wiki":"History_of_atheism","origin":"Worldwide (ancient India and Greece; Enlightenment Europe); ancient ideas, organized humanism 19th–20th c.","founders":"no founder; key thinkers include the Carvaka school, Epicurus, Lucretius, Hume, d'Holbach, Darwin, Huxley and Russell","branches":"atheism, agnosticism, secular humanism, religious humanism, plus adjacent positions such as deism and pantheism","eras":["Ancient India and China (c. 600 BCE–1000 CE)","Ancient Greece and Rome (c. 600 BCE–400 CE)","Medieval and early modern doubt (c. 800–1680)","The Enlightenment (c. 1680–1800)","Science, secularism and freethought (1800–1914)","State atheism and organized humanism (1917–1991)","The rise of the \"nones\" (1990–today)"],"milestones":[[-600,"Carvaka materialist school arises in India",true],[1417,"Poggio Bracciolini rediscovers Lucretius",false],[1869,"T. H. Huxley coins the word agnostic",false],[1925,"Soviet League of the Militant Godless founded",false],[1952,"International Humanist and Ethical Union founded",false]],"sources":[["Wikipedia: History of atheism","https://en.wikipedia.org/wiki/History_of_atheism"],["Wikipedia: Secular humanism","https://en.wikipedia.org/wiki/Secular_humanism"],["Wikipedia: Irreligion","https://en.wikipedia.org/wiki/Irreligion"]],"followersSource":"Pew Research Center, 2025 report (2020 data): 24.2% of the world has no religious affiliation"},{"id":"jainism","label":"Jainism","name":"Jainism","fam":"dha","y":-550,"ds":"c. 550 BCE","date":"c. 6th–5th c. BCE (Mahavira)","how":"founded","size":"m","status":"Living","story":"Taught in its present form by Mahavira (c. 6th–5th c. BCE), whom Jains see as the 24th and last Tirthankara of an eternal faith. It came out of the same movement of wandering ascetics as Buddhism.","beliefs":"Every living being has an eternal soul, and karma binds it. Liberation comes through strict non-violence (ahimsa), non-attachment and self-discipline.","texts":"Agamas (the Jain canon)","followers":"~4–5 million","parents":[["hinduism","grew"]],"wiki":"Jainism","origin":"Northeast India (today's Bihar), c. 6th–5th c. BCE","founders":"Mahavira, the 24th Tirthankara; Parshvanatha, the 23rd; Kundakunda; Hemachandra","branches":"Digambara, Svetambara","eras":["Tirthankaras and Mahavira (c. 8th–5th c. BCE)","Mauryan patronage and the great split (c. 300 BCE – 500 CE)","Medieval patronage (c. 500–1300 CE)","Mughal and colonial eras (c. 1300–1947)","Modern era (1947–present)"],"milestones":[[-599,"Traditional birth date of Mahavira (historians place him later)",true],[-300,"Chandragupta Maurya becomes a monk, in Digambara tradition",true],[454,"Svetambara canon written down at the Council of Valabhi",true],[981,"Statue of Bahubali carved at Shravanabelagola",true],[1760,"Acharya Bhikshu founds the Terapanthi order",false]],"sources":[["Wikipedia: Jainism","https://en.wikipedia.org/wiki/Jainism"],["Wikipedia: History of Jainism","https://en.wikipedia.org/wiki/History_of_Jainism"],["Wikipedia: Jain schools and branches","https://en.wikipedia.org/wiki/Jain_schools_and_branches"]]},{"id":"norse","label":"Norse & Germanic","name":"Norse and Germanic paganism","fam":"anc","y":-500,"ds":"Iron Age","date":"Iron Age, with Bronze Age roots","end":1100,"endLabel":"c. 1000–1100, as Scandinavia converted","how":"grew","size":"none","status":"Historical","story":"Grew among the Germanic peoples from Bronze Age roots; best known from Viking-age Scandinavia. Kings converted to Christianity around 1000 (Iceland in 1000, Sweden by about 1100). Christians wrote the myths down in the 1200s.","beliefs":"Odin, Thor, Freyja and Freyr; the world tree Yggdrasil and nine worlds. Fate, honour and courage; Ragnarök, the end and rebirth of the world.","texts":"None originally; the Eddas were written down in the 1200s","followers":"Historical; Heathenry revival","parents":[],"wiki":"Old_Norse_religion","origin":"Northern Europe and Scandinavia, Iron Age (Bronze Age roots debated)","founders":"no founder; later recorders Snorri Sturluson and Saxo Grammaticus","branches":"— (continental Germanic, Anglo-Saxon and Norse variants)","eras":["Bronze Age and Roman Iron Age (c. 1700 BCE – 400 CE)","Migration period and continental conversion (c. 400–800 CE)","Viking Age (c. 793–1100 CE)","Written down by Christians (c. 1070–1300)","Romanticism, misuse and revival (19th c. – today)"],"milestones":[[98,"Tacitus's Germania describes Germanic worship",false],[1000,"Iceland's assembly accepts Christianity",true],[1220,"Snorri Sturluson's Prose Edda preserves the myths",true],[1876,"Wagner's Ring cycle popularizes Norse myth",false],[1972,"Ásatrúarfélagið founded in Iceland",false]],"sources":[["Wikipedia: Old Norse religion","https://en.wikipedia.org/wiki/Old_Norse_religion"],["Wikipedia: Germanic paganism","https://en.wikipedia.org/wiki/Germanic_paganism"],["Wikipedia: Heathenry (new religious movement)","https://en.wikipedia.org/wiki/Heathenry_%28new_religious_movement%29"]]},{"id":"confucianism","label":"Confucianism","name":"Confucianism","fam":"eas","y":-500,"ds":"c. 500 BCE","date":"c. 500 BCE (Confucius, 551–479 BCE)","how":"founded","size":"m","rough":true,"status":"Living","story":"Started with Confucius (551–479 BCE), a teacher who wanted to restore the virtues and rites of the early Zhou dynasty. His students collected his sayings in the Analects, and the Han dynasty made it state orthodoxy.","beliefs":"A good society rests on good people: humaneness (ren), ritual propriety (li), filial piety and learning. Rulers govern by moral example.","texts":"Analects; the Four Books and Five Classics","followers":"Few formal adherents; shapes East Asian culture","parents":[["chinesefolk","grew"]],"wiki":"Confucianism","origin":"State of Lu (Shandong, China), c. 500 BCE","founders":"Confucius (Kong Qiu, 551–479 BCE), Mencius, Xunzi, Dong Zhongshu, Zhu Xi, Wang Yangming","branches":"Classical Confucianism; Han state Confucianism; Neo-Confucianism (School of Principle, School of Mind); modern New Confucianism","eras":["Confucius and the Warring States (c. 551–221 BCE)","Qin and Han: becoming state orthodoxy (221 BCE–220 CE)","Rivals and the Three Teachings (220–960 CE)","Neo-Confucianism (960–1644)","Crisis and modern critique (1644–1949)","Mao era: suppression (1949–1976)","Revival (1978–present)"],"milestones":[[-551,"Confucius born in the state of Lu",false],[605,"Civil service examinations begin under the Sui",false],[1313,"Zhu Xi's commentaries become the examination standard",false],[1905,"Imperial examinations abolished",false],[1966,"Red Guards damage Confucius sites at Qufu",false]],"sources":[["Wikipedia: Confucianism","https://en.wikipedia.org/wiki/Confucianism"],["Wikipedia: Neo-Confucianism","https://en.wikipedia.org/wiki/Neo-Confucianism"]]},{"id":"buddhism","label":"Buddhism","name":"Buddhism","fam":"dha","y":-450,"ds":"c. 5th c. BCE","date":"c. 5th c. BCE, northeast India","how":"founded","size":"l","status":"Living","story":"Founded by Siddhartha Gautama, the Buddha, who taught in northeast India after his enlightenment (c. 5th c. BCE). He came out of the movement of wandering ascetics who questioned Vedic ritual.","beliefs":"The Four Noble Truths: suffering comes from craving and can end (nirvana) through the Eightfold Path. No permanent self; karma and rebirth.","texts":"Pali Canon (Tipitaka), Mahayana sutras, Tibetan canon","followers":"~320 million","parents":[["hinduism","grew"]],"wiki":"Buddhism","origin":"Northeast India (Ganges plain), c. 5th c. BCE","founders":"Siddhartha Gautama, the Buddha; Ashoka; Nagarjuna; Padmasambhava; the Dalai Lamas; B. R. Ambedkar","branches":"Theravada, Mahayana, Vajrayana","eras":["The Buddha and the early community (c. 5th–4th c. BCE)","Ashoka, Mahayana and the Silk Road (c. 268 BCE – 500 CE)","East Asia (c. 300–1300 CE)","Vajrayana, Tibet and the Theravada world (c. 600–1500 CE)","Decline in India (c. 700–1300 CE)","Colonialism, reform and Ambedkar (c. 1800–1959)","The West, repression and today (c. 1893–present)"],"milestones":[[-450,"Siddhartha Gautama, the Buddha, lives and teaches in northeast India",true],[-268,"Ashoka begins reign and promotes the Dharma through edicts",true],[372,"Buddhism reaches Korea",false],[1042,"Atisha arrives in Tibet; four main schools take shape",false],[1956,"Ambedkar and about 365,000 followers convert at Nagpur",false]],"sources":[["Wikipedia: Buddhism","https://en.wikipedia.org/wiki/Buddhism"],["Wikipedia: History of Buddhism","https://en.wikipedia.org/wiki/History_of_Buddhism"],["Wikipedia: Buddhism in the West","https://en.wikipedia.org/wiki/Buddhism_in_the_West"]],"followersSource":"Pew Research Center, 2025 report (2020 data)"},{"id":"taoism","label":"Taoism","name":"Taoism","fam":"eas","y":-400,"ds":"c. 4th c. BCE","date":"Philosophy c. 4th c. BCE; organized religion 142 CE","range":[-400,142],"rangeLabel":"From the classical texts (c. 4th c. BCE) to the Celestial Masters (142 CE)","how":"grew","size":"m","status":"Living","story":"No single founder. It grew from Chinese folk religion and from the philosophy of the Tao Te Ching (credited to Laozi) and the Zhuangzi. Zhang Daoling's Celestial Masters made it an organized religion in 142 CE.","beliefs":"Live in harmony with the Tao, the natural way of things. Effortless action (wu wei), simplicity, the balance of yin and yang; gods, rites and longevity practices.","texts":"Tao Te Ching, Zhuangzi, Daozang (the Taoist canon)","followers":"~12 million+ formal; many more informally","parents":[["chinesefolk","grew"]],"wiki":"Taoism","origin":"China; philosophy c. 4th c. BCE, organized religion from 142 CE","founders":"Laozi (traditional author of the Daodejing; his historicity is debated), Zhuangzi, Zhang Daoling, Ge Hong, Tao Hongjing, Wang Chongyang","branches":"Zhengyi (Celestial Masters) and Quanzhen (Complete Perfection); historically Shangqing and Lingbao","eras":["Classical philosophy (c. 6th–3rd c. BCE)","Han dynasty and the first organized movements (206 BCE–220 CE)","New revelations and the Three Teachings (220–907 CE)","Song to Ming: new schools and the Canon (960–1644)","Qing and Republic (1644–1949)","People's Republic: suppression and revival (1949–present)"],"milestones":[[-300,"Daodejing takes shape; Guodian slips hold oldest passages",true],[142,"Laozi said to appear to Zhang Daoling, founding Celestial Masters",true],[1170,"Wang Chongyang, founder of Quanzhen, dies",false],[1445,"Ming prints the Zhengtong Daozang, the standard Canon",false],[1957,"State-supervised Chinese Taoist Association founded",false]],"sources":[["Wikipedia: Taoism","https://en.wikipedia.org/wiki/Taoism"],["Wikipedia: History of Taoism","https://en.wikipedia.org/wiki/History_of_Taoism"]]},{"id":"samaritan","label":"Samaritanism","name":"Samaritanism","fam":"abr","y":-350,"ds":"5th–2nd c. BCE","date":"Split c. 5th–2nd c. BCE (debated)","range":[-500,-150],"rangeLabel":"The split with Judaism is dated c. 5th–2nd c. BCE (debated)","how":"grew","size":"s","status":"Living","story":"Samaritans and Jews both descend from the religion of ancient Israel. They split over where God should be worshipped: Mount Gerizim or Jerusalem. The split happened gradually.","beliefs":"Israelite faith centred on Mount Gerizim rather than Jerusalem. Only the five books of Moses are scripture; a priesthood descended from Aaron.","texts":"Samaritan Pentateuch","followers":"~900 (2024)","parents":[["judaism","kin"]],"wiki":"Samaritans","origin":"Samaria (Mount Gerizim); split from Judean religion c. 5th–2nd c. BCE (debated)","founders":"no founder; tradition looks to Moses and Joshua; later leaders include the high priest Baba Rabba and the poet-theologian Marqe (both 4th c. CE)","branches":"— (ancient sects such as the Dositheans died out)","eras":["Origins (c. 11th–5th c. BCE, debated)","The Gerizim temple (c. 5th c. BCE – c. 110 BCE)","Roman and Byzantine eras (63 BCE – 636 CE)","Islamic rule (636–1917)","Modern era (1917–present)"],"milestones":[[-450,"Sacred precinct on Mount Gerizim exists by the 5th century BCE",true],[-110,"John Hyrcanus destroys the Gerizim temple",true],[529,"Julianus ben Sabar's revolt against Byzantine rule begins",false],[1917,"Only about 146 Samaritans remain, nearly all in Nablus",false],[2024,"Community numbers about 900 in Holon and on Gerizim",false]],"sources":[["Wikipedia: Samaritans","https://en.wikipedia.org/wiki/Samaritans"],["Wikipedia: Samaritanism","https://en.wikipedia.org/wiki/Samaritanism"],["Wikipedia: Samaritan Pentateuch","https://en.wikipedia.org/wiki/Samaritan_Pentateuch"]],"followersSource":"Community count, 2024"},{"id":"tengrism","label":"Tengrism","name":"Tengrism","fam":"ind","y":-220,"ds":"3rd c. BCE","date":"First recorded among the Xiongnu, c. 3rd c. BCE; revived in the 1990s","how":"grew","size":"s","status":"Revived","story":"No founder. Worship of Tengri, the Eternal Blue Sky, belonged to the peoples of the Eurasian steppe and is first recorded among the Xiongnu. It faded as Turks and Mongols turned to Islam and Buddhism, and revived after 1991.","beliefs":"Tengri, the Eternal Blue Sky, rules the world, with an Earth goddess. Spirits of nature and ancestors; shamans mediate between worlds.","texts":"None (oral tradition)","followers":"Small revival (Mongolia, Central Asia, Siberia)","parents":[],"wiki":"Tengrism","origin":"Eurasian steppe (Mongolia, southern Siberia, Central Asia); ancient","founders":"no founder; Göktürk khagans, Chinggis Khan; modern revivalists","branches":"no single church; Mongolian and Siberian shamanism, Sakha Aiyy faith, Burkhanism, \"political\" Tengrism","eras":["Steppe origins and the Xiongnu (c. 3rd c. BCE – 4th c. CE)","The Turkic khaganates (552–840 CE)","Conversion of the Turks (10th–14th c.)","The Mongol Empire (1206–14th c.)","Buddhism, empires and repression (1578–1990)","Revival and nationalism (1990s–present)"],"milestones":[[-200,"Xiongnu rulers' title read as an early form of Tengri",true],[552,"Bumin founds the First Turkic Khaganate",false],[1206,"Temüjin proclaimed Chinggis Khan, claiming Eternal Heaven's mandate",false],[1578,"Altan Khan titles Sonam Gyatso Dalai Lama; Mongols turn Buddhist",false],[2005,"Tengir Ordo founded in Kyrgyzstan",false]],"sources":[["Wikipedia: Tengrism","https://en.wikipedia.org/wiki/Tengrism"],["Wikipedia: Tengri","https://en.wikipedia.org/wiki/Tengri"],["Wikipedia: Orkhon inscriptions","https://en.wikipedia.org/wiki/Orkhon_inscriptions"]]},{"id":"christianity","label":"Christianity","name":"Christianity","fam":"abr","y":30,"ds":"c. 30 CE","date":"c. 30–33 CE, Roman Judea","how":"founded","size":"xl","status":"Living","story":"Began with Jesus of Nazareth, a Jewish teacher crucified in Jerusalem c. 30–33 CE. His followers proclaimed that he had risen from the dead, and Paul carried the message to non-Jews. It gradually separated from Judaism, became legal in the Roman Empire in 313 and its official religion in 380.","beliefs":"One God as Father, Son and Holy Spirit. Jesus is the Son of God, whose death and resurrection save humanity from sin; love of God and neighbour.","texts":"Bible (Old and New Testaments)","followers":"~2.3 billion","parents":[["judaism","grew"]],"wiki":"History_of_Christianity","origin":"Roman Judea (Galilee and Jerusalem), c. 30 CE","founders":"Jesus of Nazareth; the apostles Peter and Paul; later Augustine, Aquinas, Luther, Calvin","branches":"Catholic; Protestant (including evangelical and Pentecostal); Eastern Orthodox; Oriental Orthodox; Church of the East","eras":["Jesus and the apostles (c. 30–100 CE)","The early church under Rome (c. 100–313)","Imperial church and the great councils (313–c. 600)","East and West in the Middle Ages (c. 600–1500)","Reformation and global expansion (1500–1700)","Revival, Enlightenment and missions (1700–1900)","The modern era and the global South (1900–today)"],"milestones":[[30,"Jesus is crucified under Pilate; followers proclaim the Resurrection",true],[313,"Edict of Milan grants toleration to Christians",false],[1054,"Great Schism between Rome and Constantinople",false],[1517,"Luther's 95 Theses begin the Reformation",false],[1906,"Azusa Street revival launches Pentecostalism",false]],"sources":[["Wikipedia: History of Christianity","https://en.wikipedia.org/wiki/History_of_Christianity"],["Wikipedia: Christianity","https://en.wikipedia.org/wiki/Christianity"],["Wikipedia: Christian denomination","https://en.wikipedia.org/wiki/Christian_denomination"]],"followersSource":"Pew Research Center, 2025 report (2020 data)"},{"id":"mandaeism","label":"Mandaeism","name":"Mandaeism","fam":"ira","y":150,"ds":"1st–3rd c. CE","date":"c. 1st–3rd c. CE (debated)","range":[1,300],"rangeLabel":"Origins are debated: c. 1st–3rd c. CE","how":"grew","size":"s","status":"Living","story":"Its origins are debated. Mandaeans trace their faith to Adam and revere John the Baptist. Scholars place its beginnings among baptizing groups in the Jordan valley or southern Mesopotamia.","beliefs":"A God of Light far above the material world; the soul returns to the World of Light. John the Baptist is the great teacher; repeated baptism in flowing water.","texts":"Ginza Rabba","followers":"~60,000–100,000","parents":[["judaism","drew"]],"wiki":"Mandaeism","origin":"Jordan valley and southern Mesopotamia, c. 1st–3rd c. CE (debated)","founders":"no founder; John the Baptist (Yahya Yuhana) is the most revered teacher","branches":"— (priests and laity; the most learned are called Nasoraeans)","eras":["Origins (c. 1st–3rd c. CE, debated)","Late antique Mesopotamia (c. 3rd–7th c. CE)","Under Islam (7th–19th c.)","Modern Iraq and Iran (c. 1900–2003)","Persecution and exile (2003–present)"],"milestones":[[1,"Tradition says John the Baptist's disciples leave Jerusalem",true],[1831,"Cholera in Shushtar kills almost all Mandaean priests",false],[2003,"Persecution after the US-led invasion of Iraq begins",false],[2010,"Iraq reserves a parliament seat for Mandaeans",false]],"sources":[["Wikipedia: Mandaeism","https://en.wikipedia.org/wiki/Mandaeism"],["Wikipedia: Mandaeans","https://en.wikipedia.org/wiki/Mandaeans"]]},{"id":"manichaeism","label":"Manichaeism","name":"Manichaeism","fam":"ira","y":240,"ds":"c. 240 CE","date":"c. 240 CE, Sasanian Persia","end":1600,"endLabel":"c. 1600s, the last traces in southern China","how":"founded","size":"none","status":"Historical","story":"Founded by the prophet Mani (216–c. 277) in Sasanian Persia, who said he completed the work of Zoroaster, the Buddha and Jesus. It spread from the Roman Empire to China, then was persecuted almost everywhere.","beliefs":"A cosmic war of Light against Darkness. Light trapped in matter is freed by strict, ascetic living.","texts":"Mani's own scriptures (mostly lost)","followers":"None (died out)","parents":[["zoroastrianism","drew"],["christianity","drew"],["buddhism","drew"]],"wiki":"Manichaeism","origin":"Sasanian Persia (Mesopotamia), c. 240 CE","founders":"Mani (216–c. 277 CE); the Uyghur ruler Bögü Qaghan","branches":"a western church led from Babylonia; the eastern Dēnāwar branch; Chinese Mingjiao","eras":["Mani and the founding (216–c. 277 CE)","Persecution in the Roman world (3rd–6th c.)","Under the caliphs (7th–10th c.)","The Silk Road and the Uyghurs (6th–11th c.)","China: the \"Religion of Light\" (694–17th c.)","Rediscovery (20th c.–today)"],"milestones":[[216,"Mani is born near Ctesiphon",false],[763,"Bögü Qaghan makes Manichaeism the Uyghur state religion",false],[1370,"Ming dynasty bans the Religion of Light",false],[1600,"Manichaeism fades out; no continuous community survives",true],[1902,"Turfan finds begin recovery of lost Manichaean texts",false]],"sources":[["Wikipedia: Manichaeism","https://en.wikipedia.org/wiki/Manichaeism"],["Wikipedia: Mani (prophet)","https://en.wikipedia.org/wiki/Mani_%28prophet%29"]]},{"id":"islam","label":"Islam","name":"Islam","fam":"abr","y":610,"ds":"610 CE","date":"610 CE (first revelation); 622 CE (the Hijra)","range":[610,632],"rangeLabel":"From the first revelation (610) to Muhammad's death (632)","how":"founded","size":"xl","status":"Living","story":"Began in 610 CE when Muhammad, a merchant of Mecca, reported revelations from God through the angel Gabriel. Persecuted in Mecca, he moved to Medina in 622 (the Hijra, year 1 of the Islamic calendar), where the first Muslim community formed.","beliefs":"Submission to the one God, Allah. Muhammad is the final prophet; the Five Pillars are faith, prayer, charity, fasting and pilgrimage.","texts":"Qur’an, Hadith","followers":"~2.0 billion","parents":[["judaism","drew"],["christianity","drew"]],"wiki":"History_of_Islam","origin":"Mecca and Medina, Arabia; 610 CE (first revelation), 622 CE (Hijra)","founders":"the Prophet Muhammad (c. 570–632), whom Muslims see as the last of many prophets rather than a founder; the first caliphs Abu Bakr, Umar, Uthman and Ali; the Shia Imams","branches":"Sunni (~85–90%), Shia (~10–15%), Ibadi (small); Sufism runs across them","eras":["Arabia and the Prophet (c. 570–632)","The Rashidun caliphs and the first civil war (632–661)","Umayyad and Abbasid caliphates (661–1258)","Sultanates and wider spread (1258–1500)","Gunpowder empires (1500–1800)","Colonialism and reform (1800–1945)","The modern Muslim world (1945–today)"],"milestones":[[610,"Muslims date Muhammad's first revelation to 610",false],[622,"The Hijra to Medina marks year 1 of the Islamic calendar",false],[1258,"Mongols sack Baghdad",false],[1501,"Safavids make Twelver Shiism Iran's state religion",false],[1924,"Turkey abolishes the caliphate",false]],"sources":[["Wikipedia: History of Islam","https://en.wikipedia.org/wiki/History_of_Islam"],["Wikipedia: Islam","https://en.wikipedia.org/wiki/Islam"],["Wikipedia: Islamic schools and branches","https://en.wikipedia.org/wiki/Islamic_schools_and_branches"]],"followersSource":"Pew Research Center, 2025 report (2020 data)"},{"id":"druze","label":"Druze","name":"Druze faith","fam":"abr","y":1017,"ds":"1017","date":"1017 CE, Fatimid Cairo","how":"founded","size":"m","status":"Living","story":"Began in 1017 in Fatimid Cairo, when preachers led by Hamza ibn Ali proclaimed a new message about the caliph al-Hakim. It grew out of Ismaili Islam into a separate faith and stopped accepting converts in 1043.","beliefs":"The absolute unity of God. Souls are reborn at once into new human bodies; inner teachings are kept for initiates.","texts":"Epistles of Wisdom (Rasā’il al-Ḥikma)","followers":"~1 million","parents":[["islam","grew"]],"wiki":"Druze","origin":"Fatimid Egypt, then the Levant, 1017 CE","founders":"Fatimid caliph al-Ḥākim bi-Amr Allāh (r. 996–1021), the preacher Ḥamza ibn ‘Alī, and Bahā’ al-Dīn al-Muqtanā","branches":"— (the community divides into initiated ‘uqqāl and uninitiated juhhāl)","eras":["Fatimid origins (1017–1043)","Mountain communities (1043–1516)","Ottoman emirates (1516–1918)","Mandates and new states (1918–1975)","Civil wars and the present (1975–present)"],"milestones":[[1017,"The Divine Call opens publicly under Fatimid caliph al-Ḥākim",false],[1043,"Al-Muqtanā closes the Call to new members",false],[1860,"Mount Lebanon civil war between Druze and Maronites",false],[1925,"Sultan Pasha al-Aṭrash leads the Great Syrian Revolt",false],[2025,"Deadly clashes in Suwayda, Syria",false]],"sources":[["Wikipedia: Druze","https://en.wikipedia.org/wiki/Druze"],["Wikipedia: History of the Druze","https://en.wikipedia.org/wiki/History_of_the_Druze"],["Wikipedia: Druze in Israel","https://en.wikipedia.org/wiki/Druze_in_Israel"]]},{"id":"yazidism","label":"Yazidism","name":"Yazidism","fam":"ira","y":1150,"ds":"12th c.","date":"12th c. CE (Sheikh Adi), with older roots","how":"grew","size":"s","status":"Living","story":"Grew from the Sufi order of Sheikh Adi ibn Musafir (d. 1162), who settled at Lalish in northern Iraq. In the Kurdish mountains it mixed with older local beliefs and became a religion of its own.","beliefs":"One God entrusted the world to seven angels led by Tawûsî Melek, the Peacock Angel. Rebirth of souls; members are born, not converted.","texts":"Sacred hymns (qewls), mostly oral","followers":"~700,000–1 million","parents":[["islam","grew"]],"wiki":"Yazidism","origin":"Northern Iraq (Lalish), 12th c. CE (Sheikh Adi), with older roots","founders":"Sheikh Adi ibn Musafir (d. 1162); Tawûsî Melek, the Peacock Angel; the Mir and the Baba Sheikh","branches":"","eras":["Roots and Sheikh Adi (before 1162)","A distinct religion (13th–15th c.)","Ottoman-era persecution (16th–early 20th c.)","Modern states (1918–2013)","The ISIS genocide (2014–2017)","Today (2017–present)"],"milestones":[[1162,"Sheikh Adi dies; his tomb at Lalish becomes the holiest shrine",false],[1246,"Sheikh Hasan is executed by the ruler of Mosul",false],[2007,"Suicide bombings kill 796 people in Qahtaniya and Jazira",false],[2014,"ISIS overruns Sinjar and begins the Yazidi genocide",false],[2016,"UN Commission of Inquiry finds genocide",false]],"sources":[["Wikipedia: Yazidism","https://en.wikipedia.org/wiki/Yazidism"],["Wikipedia: Yazidi genocide","https://en.wikipedia.org/wiki/Yazidi_genocide"]]},{"id":"yarsanism","label":"Yarsanism","name":"Yarsanism","fam":"ira","y":1350,"ds":"14th c.","date":"14th c. CE (Sultan Sahak)","how":"founded","size":"m","status":"Living","story":"Organized by Sultan Sahak in the 14th century in the Kurdish region of western Iran. It came out of the Shia and Sufi world of the time and older Iranian beliefs.","beliefs":"God appears in human form in successive eras, above all as Sultan Sahak. Rebirth of souls; sacred music on the tanbur; communal gatherings (jam).","texts":"Kalâm-e Saranjâm","followers":"~1 million+ (estimates vary widely)","parents":[["islam","grew"]],"wiki":"Yarsanism","origin":"Western Iran (Kurdish region), 14th c. CE (Sultan Sahak)","founders":"Sultan Sahak (late 14th c.); the Haft Tan, led by Pir Binyamin; Ostad Elahi (20th c.)","branches":"eleven hereditary spiritual houses (khandans); \"separate religion\" and Shia-leaning interpretations","eras":["Background (8th–13th c.)","Sultan Sahak and the founding (late 14th–15th c.)","Spread and secrecy (16th–19th c.)","Reform and the modern state (20th c.)","The 21st century (2000–today)"],"milestones":[[1400,"Sultan Sahak, seen by adherents as a manifestation of God, teaches",true],[1450,"Kalam-e Saranjam, the teachings of Sultan Sahak, gathered",true],[1920,"Ostad Elahi's circle teaches Yarsanism as a universal path",true],[2015,"Iraqi Kurdistan recognizes the Kaka'i community",false]],"sources":[["Wikipedia: Yarsanism","https://en.wikipedia.org/wiki/Yarsanism"]]},{"id":"inca","label":"Inca","name":"Inca religion","fam":"anc","y":1400,"ds":"c. 1400","date":"The Inca state, c. 1400 CE, on older Andean roots","end":1532,"endLabel":"1532, the Spanish conquest","how":"grew","size":"none","status":"Historical","story":"The Inca state (c. 1400–1532) built an empire-wide cult of the sun god Inti on top of much older Andean beliefs. The Spanish conquest ended the state religion; worship of Pachamama and sacred places survived.","beliefs":"The sun god Inti, ancestor of the Inca rulers; the creator Viracocha; Earth Mother Pachamama; sacred places and objects (huacas).","texts":"None (no writing; knotted-cord quipu records)","followers":"Historical; Pachamama veneration survives","parents":[],"wiki":"Inca_religion","origin":"Andes (Peru), Inca state c. 1400–1532 CE, on older Andean roots","founders":"No founder; tradition credits the ruler Pachacuti (r. c. 1438–1471) with reshaping state religion","branches":"","eras":["Older Andean roots (c. 3000 BCE – 1400 CE)","The Inca state (c. 1400 – 1532)","Conquest (1532 – 1572)","Colonial Christianity (1572 – 1800)","Survival and revival (1800 – today)"],"milestones":[[-3000,"Caral builds early monumental platforms",true],[1438,"Pachacuti reshapes state religion and rebuilds the Coricancha",true],[1532,"Pizarro seizes Atahualpa at Cajamarca",false],[1564,"Taki Onqoy movement preaches against the Spanish",true],[1944,"Inti Raymi re-enactment begins at Sacsayhuaman",false]],"sources":[["Wikipedia: Inca religion","https://en.wikipedia.org/wiki/Inca_religion"],["Wikipedia: Taki Unquy","https://en.wikipedia.org/wiki/Taki_Unquy"]]},{"id":"sikhism","label":"Sikhism","name":"Sikhism","fam":"dha","y":1499,"ds":"c. 1500","date":"c. 1499 (Guru Nanak's calling), Punjab","how":"founded","size":"m","status":"Living","story":"Founded by Guru Nanak (1469–1539) in Punjab, who after a spiritual experience around 1499 taught that \"there is no Hindu, there is no Muslim\". Nine more Gurus followed; Guru Gobind Singh founded the Khalsa in 1699.","beliefs":"One formless God (Ik Onkar). Equality of all regardless of caste or gender; remembering God, honest work, sharing and selfless service.","texts":"Guru Granth Sahib","followers":"~25–30 million","parents":[["hinduism","grew"],["islam","drew"]],"wiki":"Sikhism","origin":"Punjab (now split between India and Pakistan), c. 1500 CE","founders":"Guru Nanak (1469–1539) and nine successor Gurus, ending with Guru Gobind Singh","branches":"mainstream Khalsa tradition; Namdhari, Nirankari, Udasi, Nihang","eras":["Guru Nanak and the early Gurus (1469–1606)","Martyrdom and the Khalsa (1606–1708)","Persecution and the Sikh Empire (1708–1849)","British rule and Partition (1849–1947)","Independent India, 1984 and after (1947–present)"],"milestones":[[1469,"Guru Nanak born at Talwandi",false],[1604,"Guru Arjan compiles the Adi Granth",false],[1699,"Guru Gobind Singh creates the Khalsa at Vaisakhi",false],[1849,"Britain annexes Punjab after two Anglo-Sikh Wars",false],[1984,"Operation Blue Star and the anti-Sikh riots",false]],"sources":[["Wikipedia: Sikhism","https://en.wikipedia.org/wiki/Sikhism"],["Wikipedia: History of Sikhism","https://en.wikipedia.org/wiki/History_of_Sikhism"],["Wikipedia: Sikh gurus","https://en.wikipedia.org/wiki/Sikh_gurus"]]},{"id":"diaspora","label":"African diaspora","name":"African diaspora religions (Vodou, Santería, Candomblé)","fam":"ind","y":1550,"ds":"16th c.","date":"16th–19th c. (Umbanda early 20th c.)","range":[1500,1900],"rangeLabel":"Formed during the Atlantic slave trade, 16th–19th c.","how":"grew","size":"m","status":"Living","story":"Enslaved Africans brought to the Americas kept their Yoruba, Fon and Kongo gods alive, often hidden behind Catholic saints. This gave rise to Vodou in Haiti, Santería in Cuba, and Candomblé and later Umbanda in Brazil.","beliefs":"Spirits (orishas, lwa) are served with drumming, dance, offerings and trance possession, often paired with Catholic saints.","texts":"None (oral tradition)","followers":"Several million","parents":[["african","grew"],["christianity","drew"]],"wiki":"Afro-American_religions","origin":"Caribbean and Brazil, from Yoruba, Fon and Kongo roots, 16th–19th c. CE (Umbanda in the early 20th c.)","founders":"No founder; created by enslaved Africans and their descendants; noted priestesses include Marie Laveau and Mãe Menininha do Gantois","branches":"Haitian Vodou, Cuban Santería (Lucumí) and Palo, Brazilian Candomblé and Umbanda, Trinidad Orisha, Louisiana Voodoo, Surinamese Winti","eras":["The slave trade (16th–18th c.)","Saint-Domingue, Haiti and Louisiana (18th–19th c.)","Cuba and Brazil (19th c.)","Repression and stereotype (c. 1890 – 1950)","Recognition and spread (c. 1950 – today)"],"milestones":[[1791,"Bois Caïman ceremony said to begin the Haitian Revolution",true],[1908,"Date adherents give for the birth of Umbanda in Rio",true],[1941,"Haiti's anti-superstition campaign destroys temples",false],[1993,"US Supreme Court protects Santería animal sacrifice",false],[2003,"Haiti recognizes Vodou as a religion",false]],"sources":[["Wikipedia: Afro-American religions","https://en.wikipedia.org/wiki/Afro-American_religions"],["Wikipedia: Haitian Vodou","https://en.wikipedia.org/wiki/Haitian_Vodou"],["Wikipedia: Candomblé","https://en.wikipedia.org/wiki/Candombl%C3%A9"]],"followersSource":"Brazil census 2022: 1.8 million followers of Umbanda and Candomblé"},{"id":"lds","label":"Latter Day Saints","name":"Latter Day Saint movement","fam":"nrm","y":1830,"ds":"1830","date":"1830, New York","how":"founded","size":"m","status":"Living","story":"Founded by Joseph Smith in New York in 1830, after he reported visions and published the Book of Mormon. It came out of the revivals of the Second Great Awakening. After Smith's murder in 1844, Brigham Young led most members to Utah.","beliefs":"Christ's original church restored through Joseph Smith. Father, Son and Holy Ghost are separate beings; living prophets; families sealed for eternity in temples.","texts":"Bible, Book of Mormon, Doctrine and Covenants, Pearl of Great Price","followers":"~18 million","parents":[["christianity","grew"]],"wiki":"Latter_Day_Saint_movement","origin":"western New York, USA; church organized 6 April 1830","founders":"Joseph Smith (1805–1844); Brigham Young; Joseph Smith III; Russell M. Nelson (president 2018–2025); Dallin H. Oaks (president since 2025)","branches":"The Church of Jesus Christ of Latter-day Saints; Community of Christ; Mormon fundamentalists","eras":["Origins in New York (1820–1831)","Kirtland and Missouri (1831–1839)","Nauvoo (1839–1846)","Succession and the trek west (1844–1869)","The polygamy conflict (1862–1904)","Growth and the 1978 revelation (1904–2000)","The modern era (2000–present)"],"milestones":[[1820,"Date Joseph Smith later gave for his First Vision",false],[1830,"Church organized on 6 April; Book of Mormon published",false],[1890,"Wilford Woodruff's Manifesto ends new plural marriages",false],[1978,"Kimball announces end of the priesthood ban for Black men",false],[2018,"Nelson asks that the full church name be used",false]],"sources":[["Wikipedia: Latter Day Saint movement","https://en.wikipedia.org/wiki/Latter_Day_Saint_movement"],["Wikipedia: The Church of Jesus Christ of Latter-day Saints","https://en.wikipedia.org/wiki/The_Church_of_Jesus_Christ_of_Latter-day_Saints"],["Wikipedia: Mormon fundamentalism","https://en.wikipedia.org/wiki/Mormon_fundamentalism"]],"followersSource":"Church of Jesus Christ of Latter-day Saints statistical report for 2025, plus other Latter Day Saint churches"},{"id":"bahai","label":"Bahá’í Faith","name":"Bahá’í Faith","fam":"abr","y":1844,"ds":"1844","date":"1844 (the Báb); 1863 (Bahá’u’lláh)","range":[1844,1863],"rangeLabel":"From the Báb's announcement (1844) to Bahá’u’lláh's declaration (1863)","how":"founded","size":"m","status":"Living","story":"Grew out of the Bábí movement: in 1844 in Iran, the Báb announced that a new messenger was coming. In 1863 Bahá’u’lláh, one of his followers, declared in exile in Baghdad that he was that messenger.","beliefs":"One God sends messengers age by age. The unity of humanity and of religions; equality of women and men; harmony of science and religion.","texts":"Writings of the Báb, Bahá’u’lláh and ‘Abdu'l-Bahá","followers":"~5–8 million","parents":[["islam","grew"]],"wiki":"Bah%C3%A1%CA%BC%C3%AD_Faith","origin":"Qajar Iran, 1844 (the Báb); 1863 (Bahá’u’lláh)","founders":"the Báb (1819–1850), Bahá’u’lláh (1817–1892), ‘Abdu’l-Bahá (1844–1921), Shoghi Effendi (1897–1957)","branches":"one main community led by the Universal House of Justice; a few tiny breakaway groups","eras":["The Bábí movement (1844–1853)","Bahá’u’lláh in exile (1853–1892)","‘Abdu’l-Bahá and Shoghi Effendi (1892–1957)","The Universal House of Justice (1957–1979)","Persecution in Iran and global growth (1979–present)"],"milestones":[[1844,"The Báb declares his mission in Shiraz",false],[1850,"The Báb is executed in Tabriz",false],[1863,"Bahá’u’lláh declares his mission in the Garden of Riḍván",false],[1963,"First Universal House of Justice is elected",false],[1979,"Persecution of Bahá’ís in Iran intensifies after the revolution",false]],"sources":[["Wikipedia: Bahá’í Faith","https://en.wikipedia.org/wiki/Bah%C3%A1%CA%BC%C3%AD_Faith"],["Wikipedia: Persecution of Bahá’ís","https://en.wikipedia.org/wiki/Persecution_of_Bah%C3%A1%CA%BC%C3%ADs"],["Wikipedia: Charles Mason Remey","https://en.wikipedia.org/wiki/Charles_Mason_Remey"]]},{"id":"spiritism","label":"Spiritism","name":"Spiritism","fam":"nrm","y":1857,"ds":"1857","date":"1857, France","how":"founded","size":"m","status":"Living","story":"Set out by the French teacher Allan Kardec, whose The Spirits' Book (1857) organized messages said to come from spirits through mediums. It came out of the table-turning craze of the 1850s and took deepest root in Brazil.","beliefs":"God and immortal spirits that reincarnate to improve morally. Mediums can talk with spirits; charity and self-improvement.","texts":"The Spirits' Book and Kardec's other works","followers":"Several million, mostly in Brazil","parents":[["christianity","drew"]],"wiki":"Spiritism","origin":"Paris, France, 1857 (publication of The Spirits' Book)","founders":"Allan Kardec (1804–1869); Léon Denis; Bezerra de Menezes; Chico Xavier (1910–2002); Divaldo Franco (1927–2025)","branches":"religious (\"Christian\") Spiritism; a smaller secular-philosophical current","eras":["Spirit rapping and table-turning (1848–1855)","Kardec and the Codification (1855–1869)","Decline in France, growth in the Americas (1869–1930)","Chico Xavier and the Brazilian flowering (1930–2002)","The modern era (2002–present)"],"milestones":[[1848,"Fox sisters report spirit rappings in Hydesville",false],[1857,"Kardec publishes The Spirits' Book",false],[1932,"Chico Xavier begins publishing spirit-dictated books",false],[1992,"International Spiritist Council founded",false],[2022,"Brazil counts 1.8% of its population as Spiritist",false]],"sources":[["Wikipedia: Spiritism","https://en.wikipedia.org/wiki/Spiritism"],["Wikipedia: Allan Kardec","https://en.wikipedia.org/wiki/Allan_Kardec"],["Wikipedia: Chico Xavier","https://en.wikipedia.org/wiki/Chico_Xavier"]],"followersSource":"Brazil census 2022: 1.8% of the population"},{"id":"cheondoism","label":"Cheondoism","name":"Cheondoism","fam":"eas","y":1860,"ds":"1860","date":"1860 (as Donghak); renamed Cheondogyo in 1905","how":"founded","size":"s","status":"Living","story":"Founded as Donghak (\"Eastern Learning\") in 1860 by Choe Je-u after a religious experience, as a Korean answer to Western ideas and Catholicism. It was renamed Cheondogyo in 1905.","beliefs":"Humans are Heaven: the divine Hanulnim lives in every person, so all people are equal. Social reform.","texts":"Donggyeong Daejeon","followers":"Tens of thousands in South Korea; North Korea reports ~15,000","parents":[["confucianism","drew"],["korean","drew"]],"wiki":"Cheondoism","origin":"Joseon Korea (near Gyeongju), 1860","founders":"Choe Je-u (1824–1864), Choe Si-hyeong (1827–1898), Son Byong-hi (1861–1922)","branches":"Cheondogyo; small offshoots such as Sicheongyo","eras":["Founding of Donghak (1860–1864)","Underground growth (1864–1893)","The Donghak Peasant Revolution (1894–1898)","Cheondogyo and independence (1905–1945)","A divided Korea (1945–present)"],"milestones":[[1860,"Choe Je-u reports a revelation from the Lord of Heaven",false],[1864,"Choe Je-u executed in Daegu",false],[1894,"Donghak Peasant Revolution begins at Gobu",false],[1905,"Son Byong-hi renames Donghak as Cheondogyo",false],[1919,"Cheondoists among signers of March 1st Movement declaration",false]],"sources":[["Wikipedia: Cheondoism","https://en.wikipedia.org/wiki/Cheondoism"],["Wikipedia: Donghak Peasant Revolution","https://en.wikipedia.org/wiki/Donghak_Peasant_Revolution"],["Wikipedia: March 1st Movement","https://en.wikipedia.org/wiki/March_1st_Movement"]],"followersSource":"North Korea’s 2002 report to the UN Human Rights Committee, as cited by the US State Department"},{"id":"jw","label":"Jehovah's Witnesses","name":"Jehovah's Witnesses","fam":"nrm","y":1872,"ds":"1870s","date":"1870s (the name was adopted in 1931)","range":[1870,1931],"rangeLabel":"Bible Students in the 1870s; named Jehovah's Witnesses in 1931","how":"founded","size":"m","status":"Living","story":"Started in the 1870s with Charles Taze Russell's Bible Student group in Pennsylvania, out of Adventist expectation of Christ's return. The group took the name Jehovah's Witnesses in 1931 under Joseph Rutherford.","beliefs":"Jehovah is the one God and Jesus is his son, not God himself. God's Kingdom will soon replace human governments; door-to-door preaching; no blood transfusions.","texts":"Bible (their New World Translation)","followers":"~9 million active members","parents":[["christianity","grew"]],"wiki":"Jehovah%27s_Witnesses","origin":"Allegheny (now Pittsburgh), Pennsylvania, USA; 1870s, name adopted 1931","founders":"Charles Taze Russell (1852–1916); Joseph F. Rutherford (1869–1942); Nathan H. Knorr; the Governing Body (Warwick, New York)","branches":"one centrally run organization; small independent Bible Student groups share its roots","eras":["The Bible Students (c. 1870–1916)","Rutherford's reshaping (1917–1942)","Persecution under dictatorships (1933–1965)","Knorr and global growth (1942–1976)","Governing Body era (1976–2000)","The modern era (2000–present)"],"milestones":[[1879,"Russell launches Zion's Watch Tower",false],[1931,"Bible Students adopt the name Jehovah’s Witnesses",false],[1933,"Nazi Germany bans the Witnesses",false],[1976,"Authority passes to the Governing Body",false],[2017,"Russia's Supreme Court declares the organization extremist",false]],"sources":[["Wikipedia: Jehovah's Witnesses","https://en.wikipedia.org/wiki/Jehovah%27s_Witnesses"],["Wikipedia: History of Jehovah's Witnesses","https://en.wikipedia.org/wiki/History_of_Jehovah%27s_Witnesses"],["Wikipedia: Persecution of Jehovah's Witnesses in Nazi Germany","https://en.wikipedia.org/wiki/Persecution_of_Jehovah%27s_Witnesses_in_Nazi_Germany"]],"followersSource":"Jehovah’s Witnesses 2025 service year report (peak publishers)"},{"id":"caodaism","label":"Caodaism","name":"Caodaism","fam":"eas","y":1926,"ds":"1926","date":"1926, southern Vietnam","how":"founded","size":"m","status":"Living","story":"Founded in 1926 in southern Vietnam after séances in which, followers say, the Supreme Being spoke to the civil servant Ngô Văn Chiêu (from 1921) and others. It deliberately blends Buddhism, Taoism, Confucianism, Christianity and spiritism.","beliefs":"One Supreme Being, shown as the Divine Eye, unites the great religions. Its saints include Victor Hugo; vegetarianism, prayer and séances.","texts":"Collected spirit messages and the religion's constitution","followers":"~0.5 million (census) to several million (claimed)","parents":[["buddhism","drew"],["taoism","drew"],["confucianism","drew"],["christianity","drew"],["spiritism","drew"]],"wiki":"Caodaism","origin":"Southern Vietnam (Saigon and Tây Ninh), 1926","founders":"Ngô Văn Chiêu (first disciple), Lê Văn Trung (first acting pope), Phạm Công Tắc (chief medium)","branches":"Tây Ninh Holy See (largest); about ten smaller recognized sects","eras":["Origins in French Cochinchina (1920–1926)","Growth and early schisms (1926–1940)","War and militia (1941–1956)","Communist rule (1975–1997)","Recognition and diaspora (1997–present)"],"milestones":[[1920,"Ngô Văn Chiêu said to receive messages from God on Phú Quốc",true],[1926,"Religion declared to the French governor, then inaugurated at Tây Ninh",false],[1955,"Ngô Đình Diệm breaks the armed sects",false],[1975,"Communist government seizes property and bans séances",false],[1997,"Vietnam recognizes the Tây Ninh Holy See",false]],"sources":[["Wikipedia: Caodaism","https://en.wikipedia.org/wiki/Caodaism"],["Wikipedia: Tây Ninh Holy See","https://en.wikipedia.org/wiki/T%C3%A2y_Ninh_Holy_See"]]},{"id":"rastafari","label":"Rastafari","name":"Rastafari","fam":"abr","y":1930,"ds":"1930s","date":"1930s, Jamaica","how":"grew","size":"s","status":"Living","story":"Grew in 1930s Jamaica among poor Black Jamaicans after Haile Selassie was crowned emperor of Ethiopia in 1930, which many saw as fulfilling Marcus Garvey's call to look to Africa. Street preachers such as Leonard Howell spread it.","beliefs":"God (Jah) is revealed in Haile Selassie I. Africa (Zion) against an oppressive Babylon; natural ital living; dreadlocks; ganja as a sacrament for many.","texts":"Bible (read from an African perspective)","followers":"~700,000–1 million","parents":[["christianity","grew"]],"wiki":"Rastafari","origin":"Jamaica, 1930s","founders":"no single founder; early preachers Leonard Howell, Joseph Hibbert, Archibald Dunkley and Robert Hinds; inspired by Marcus Garvey; Emperor Haile Selassie I of Ethiopia revered as divine (a status he never claimed)","branches":"the \"mansions\" Nyabinghi, Bobo Ashanti and Twelve Tribes of Israel","eras":["Roots (1838–1930)","The first preachers (1930–1954)","Persecution and growth (1954–1966)","Reggae and global spread (1966–1981)","Recognition and today (1981–present)"],"milestones":[[1930,"Ras Tafari is crowned Emperor Haile Selassie I",false],[1966,"Haile Selassie visits Jamaica to huge crowds",false],[1981,"Bob Marley dies and becomes the movement's global icon",false],[2015,"Jamaica allows Rastafari sacramental cannabis use",false]],"sources":[["Wikipedia: Rastafari","https://en.wikipedia.org/wiki/Rastafari"],["Wikipedia: History of Rastafari","https://en.wikipedia.org/wiki/History_of_Rastafari"],["Wikipedia: Mansions of Rastafari","https://en.wikipedia.org/wiki/Mansions_of_Rastafari"]],"followersSource":"Jamaica census 2011 counted 29,026; the worldwide figure is an estimate"},{"id":"wicca","label":"Wicca & Paganism","name":"Wicca and modern Paganism","fam":"nrm","y":1952,"ds":"1950s","date":"1950s, England (Gerald Gardner)","how":"founded","size":"m","status":"Living","story":"Made public by Gerald Gardner in England in the early 1950s. He said it was a surviving witch religion, which historians doubt. It drew on folklore, ceremonial magic and romantic ideas about Europe's pagan past.","beliefs":"A Goddess and a God; eight seasonal festivals (the Wheel of the Year); ritual magic; the ethic \"an it harm none, do what ye will\".","texts":"None central; covens keep a Book of Shadows","followers":"~1–2 million (estimates)","parents":[["celtic","drew"],["norse","drew"],["greek","drew"]],"wiki":"Wicca","origin":"England, 1950s (Wicca); wider Pagan revival, 20th c.","founders":"Gerald Gardner (1884–1964); Doreen Valiente (1922–1999); Alex and Maxine Sanders; Starhawk; Ross Nichols (Druidry); Sveinbjörn Beinteinsson (Heathenry)","branches":"Wicca (Gardnerian, Alexandrian, eclectic, Dianic, Reclaiming); Druidry; Heathenry; reconstructionist paths","eras":["Roots in Romanticism and the occult (1700s–1930s)","Gardner and the birth of Wicca (1939–1964)","Spread and new traditions (1960s–1970s)","Druidry, Heathenry and reconstruction (1960s–present)","Feminism, activism and the \"Burning Times\" (1979–1999)","The modern era (2000–present)"],"milestones":[[1792,"Iolo Morganwg holds the first Gorsedd of Bards in London",false],[1921,"Margaret Murray publishes The Witch-Cult in Western Europe",false],[1951,"Witchcraft Act repealed; Gardner goes public in 1954",false],[1964,"Buckland brings Gardnerian Wicca to the USA",false],[1979,"Starhawk publishes The Spiral Dance",false]],"sources":[["Wikipedia: Wicca","https://en.wikipedia.org/wiki/Wicca"],["Wikipedia: Modern paganism","https://en.wikipedia.org/wiki/Modern_paganism"],["Wikipedia: Witch-cult hypothesis","https://en.wikipedia.org/wiki/Witch-cult_hypothesis"]]},{"id":"scientology","label":"Scientology","name":"Scientology","fam":"nrm","y":1954,"ds":"1953–54","date":"1953–54, USA (Dianetics 1950)","range":[1950,1954],"rangeLabel":"Dianetics (1950) to the first churches (1953–54)","how":"founded","size":"s","status":"Living","story":"Founded by the science-fiction writer L. Ron Hubbard. He published Dianetics as a self-help therapy in 1950, then recast it as a religion; the first churches were incorporated in 1953–54.","beliefs":"Humans are immortal spiritual beings (thetans). Auditing removes past traumas to reach the state of Clear. Highly controversial.","texts":"Dianetics and Hubbard's other writings","followers":"Claims ~10 million; independent estimates in the tens of thousands","parents":[],"wiki":"Scientology","origin":"USA, 1953–54 (Dianetics 1950)","founders":"L. Ron Hubbard (1911–1986); David Miscavige (leader since the 1980s)","branches":"Church of Scientology; independent \"Free Zone\" Scientologists","eras":["Dianetics (1950–1952)","Becoming a church (1953–1966)","The Sea Org years (1967–1975)","Snow White and Hubbard's last years (1973–1986)","Miscavige and tax exemption (1986–2000)","The modern era (2000–today)"],"milestones":[[1950,"Hubbard publishes Dianetics",false],[1954,"Church of Scientology of California registered",false],[1967,"Hubbard founds the Sea Organization",false],[1993,"IRS grants tax exemption to the church",false],[2009,"French court convicts church bodies of organised fraud",false]],"sources":[["Wikipedia: Scientology","https://en.wikipedia.org/wiki/Scientology"],["Wikipedia: History of Scientology","https://en.wikipedia.org/wiki/History_of_Scientology"],["Wikipedia: Operation Snow White","https://en.wikipedia.org/wiki/Operation_Snow_White"]],"followersSource":"A 2008 US survey found about 25,000 adult adherents"},{"id":"uu","label":"Unitarian Universalism","name":"Unitarian Universalism","fam":"nrm","y":1961,"ds":"1961","date":"1961 merger; roots in the 1560s","range":[1568,1961],"rangeLabel":"Unitarian churches from 1568; the merger in 1961","how":"grew","size":"s","status":"Living","story":"Formed in 1961 when the American Unitarian and Universalist churches merged. Both grew out of Protestant Christianity: Unitarians from 16th-century anti-Trinitarians, Universalists from the belief that all souls will be saved.","beliefs":"No required creed; members may be theist, atheist, Buddhist, Pagan or other. Shared values: dignity, justice, a free search for truth and care for the earth.","texts":"None required","followers":"A few hundred thousand","parents":[["christianity","grew"]],"wiki":"Unitarian_Universalism","origin":"USA, 1961 merger; roots in 16th-c. CE European anti-Trinitarianism","founders":"Michael Servetus, Ferenc Dávid, Joseph Priestley, William Ellery Channing, Hosea Ballou","branches":"Unitarian and Universalist heritages; national bodies in the USA, Canada, Britain, Transylvania and India","eras":["Reformation forerunners (1531–1660s CE)","English Unitarianism (1650s–1920s CE)","American Unitarianism (1785–1900 CE)","American Universalism (1770–1961 CE)","Humanism and merger (1900–1961 CE)","Since the merger (1961 CE–today)"],"milestones":[[1531,"Servetus attacks the Trinity; burned in Geneva in 1553",false],[1568,"Edict of Torda grants preachers religious freedom in Transylvania",false],[1825,"American Unitarian Association formed",false],[1961,"Unitarian and Universalist bodies merge as the UUA",false],[2024,"General Assembly approves new Article II",false]],"sources":[["Wikipedia: Unitarian Universalism","https://en.wikipedia.org/wiki/Unitarian_Universalism"],["Wikipedia: Unitarianism","https://en.wikipedia.org/wiki/Unitarianism"],["Wikipedia: Universalist Church of America","https://en.wikipedia.org/wiki/Universalist_Church_of_America"]],"followersSource":"Unitarian Universalist Association, about 130,000 adult members in 2024"},{"id":"falun","label":"Falun Gong","name":"Falun Gong","fam":"nrm","y":1992,"ds":"1992","date":"1992, China","how":"founded","size":"m","status":"Living","story":"Introduced by Li Hongzhi in China in 1992, during a boom in qigong (breathing and exercise practice). He added moral teachings drawn from Buddhism and Taoism. China banned it in 1999.","beliefs":"Truthfulness, compassion, forbearance. Meditation and slow exercises cultivate body and mind; banned and persecuted in China since 1999.","texts":"Zhuan Falun","followers":"Millions (estimates vary widely)","parents":[["buddhism","drew"],["taoism","drew"]],"wiki":"Falun_Gong","origin":"Changchun, northeast China, 1992","founders":"Li Hongzhi (born 1951 or 1952; the date is disputed), based in the USA since 1998","branches":"— (no formal branches; affiliated media and arts groups abroad)","eras":["Qigong fever and founding (1980s–1995)","Rising tensions (1996–April 1999)","The ban (1999–2001)","Persecution in China (2001–today)","Diaspora and media (2000–today)"],"milestones":[[1992,"Li Hongzhi first teaches Falun Gong in Changchun",false],[1995,"Zhuan Falun published as the core text",false],[1999,"About 10,000 practitioners gather at Zhongnanhai on 25 April",false],[1999,"Government bans Falun Gong on 22 July",false],[2006,"Kilgour-Matas report alleges organ harvesting, which China denies",false]],"sources":[["Wikipedia: Falun Gong","https://en.wikipedia.org/wiki/Falun_Gong"],["Wikipedia: History of Falun Gong","https://en.wikipedia.org/wiki/History_of_Falun_Gong"],["Wikipedia: Persecution of Falun Gong","https://en.wikipedia.org/wiki/Persecution_of_Falun_Gong"]],"followersSource":"Freedom House (2017) estimated 7–20 million practitioners in China"}]};
+  var NOTES = null;
+  if (!DATA) {
+    document.getElementById("detail").textContent = "This is the page template. Build the page with: npm run build";
+    return;
+  }
+
+  var FAMS = DATA.families.map(function (f) { return [f.id, f.name]; });
+  var FAM_NAME = {};
+  FAMS.forEach(function (f) { FAM_NAME[f[0]] = f[1]; });
+  var W_BASE = "https://en.wikipedia.org/wiki/";
+  var D = DATA.religions;
+
+  var BY = {};
+  D.forEach(function (d) { BY[d.id] = d; d.kids = []; });
+  D.forEach(function (d) { d.parents.forEach(function (p) { BY[p[0]].kids.push([d.id, p[1]]); }); });
+  var EDGES = [];
+  D.forEach(function (d) { d.parents.forEach(function (p) { EDGES.push({ from: p[0], to: d.id, kind: p[1] }); }); });
+  var ORDER = D.slice().sort(function (a, b) {
+    var ay = a.pre != null ? -1e6 + a.pre : a.y, by = b.pre != null ? -1e6 + b.pre : b.y;
+    return ay - by;
+  });
+  var R = { xl: 9, l: 7, m: 5.2, s: 3.8, none: 4.6 };
+
+  var Y0 = -3600, Y1 = 2030, NOW = 2026;
+  var ERAS = [
+    { a: -3600, b: -800, name: "First civilizations" },
+    { a: -800, b: -200, name: "Axial Age" },
+    { a: -200, b: 1500, name: "Empires & universal faiths" },
+    { a: 1500, b: 1800, name: "Early modern" },
+    { a: 1800, b: Y1, name: "Modern" }
+  ];
+  var TICKS = [1, -1000, -2000, -3000, 1000, 1500, 2000, -500, 500, 1800, 1900, -1500, -2500, 1950, 1700];
+
+  var state = { s: 0, fam: "all", sel: "christianity", view: "time" };
+  try { if (localStorage.getItem("rtt-scale") === "1") state.s = 1; } catch (e) {}
+  var hash = (location.hash || "").slice(1);
+  if (BY[hash]) state.sel = hash;
+
+  var root = document.documentElement;
+  var svg = document.getElementById("chart");
+  var shell = document.getElementById("shell");
+  var scroller = document.getElementById("scroller");
+  var tip = document.getElementById("tip");
+  var NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, parent) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function fmtYear(y) { return y < 0 ? (-y) + " BCE" : (y === 1 ? "1 CE" : String(y)); }
+  function fmtMoment(m) { var y = m[0]; return (m[2] ? "c. " : "") + (y < 0 ? (-y) + " BCE" : (y < 1000 ? y + " CE" : String(y))); }
+  function reduced() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+  function findFirst(list, fn) { for (var i = 0; i < list.length; i++) if (fn(list[i])) return list[i]; return null; }
+
+  document.getElementById("count").textContent = D.length;
+  svg.setAttribute("aria-label", "Timeline of " + D.length + " religions by when they appeared");
+
+  // ---------- theme ----------
+  var thNight = document.getElementById("th-night"), thDay = document.getElementById("th-day");
+  try { var st = localStorage.getItem("rtt-theme"); if (st === "light" || st === "dark") root.setAttribute("data-theme", st); } catch (e) {}
+  function themeNow() {
+    var t = root.getAttribute("data-theme");
+    if (t === "light" || t === "dark") return t;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+  function syncTheme() {
+    var t = themeNow();
+    thNight.setAttribute("aria-pressed", t === "dark" ? "true" : "false");
+    thDay.setAttribute("aria-pressed", t === "light" ? "true" : "false");
+  }
+  function setTheme(t) {
+    root.setAttribute("data-theme", t);
+    try { localStorage.setItem("rtt-theme", t); } catch (e) {}
+    syncTheme();
+  }
+  thNight.addEventListener("click", function () { setTheme("dark"); });
+  thDay.addEventListener("click", function () { setTheme("light"); });
+  if (window.matchMedia) {
+    var mq = window.matchMedia("(prefers-color-scheme: light)");
+    if (mq.addEventListener) mq.addEventListener("change", syncTheme);
+  }
+  if (window.MutationObserver) new MutationObserver(syncTheme).observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+  syncTheme();
+
+  // ---------- text measurement ----------
+  var ctx = document.createElement("canvas").getContext("2d");
+  var widths = {};
+  function measure() {
+    D.forEach(function (d) {
+      ctx.font = '500 12.5px "IBM Plex Sans Condensed", "Arial Narrow", sans-serif';
+      var a = ctx.measureText(d.label).width;
+      ctx.font = '400 10px "IBM Plex Mono", Menlo, monospace';
+      var b = ctx.measureText(d.ds).width;
+      widths[d.id] = Math.ceil(Math.max(a, b));
+    });
+  }
+
+  // ---------- layout ----------
+  var BAND = 24, BASE = 26, STEP = 33, TOPPAD = 34, BOTPAD = 26;
+  function geometry(s) {
+    var W = Math.max(scroller.clientWidth || shell.clientWidth || 1100, 1060);
+    var ml = 18, mr = 26;
+    var preW = Math.max(96, (W - ml - mr) * 0.085);
+    var x0 = ml + preW + 26, x1 = W - mr - 36;
+    return { W: W, s: s, ml: ml, preW: preW, x0: x0, mainW: x1 - x0 };
+  }
+  function X(g, y) {
+    var fs = 1 - Math.sqrt(Math.max(0, Y1 - y)) / Math.sqrt(Y1 - Y0);
+    var fl = (y - Y0) / (Y1 - Y0);
+    return g.x0 + ((1 - g.s) * fs + g.s * fl) * g.mainW;
+  }
+  function preX(g, i) { return g.ml + 16 + i * ((g.preW - 24) / 4.6); }
+
+  function layout(s) {
+    var g = geometry(s);
+    var pos = {};
+    var levels = { up: [], down: [] };
+    var maxL = { up: 0, down: 0 };
+    ORDER.forEach(function (d) {
+      var x = d.pre != null ? preX(g, d.pre) : X(g, d.y);
+      var r = R[d.size];
+      var w = widths[d.id] || 80;
+      var side = d.how === "founded" ? "up" : "down";
+      var anchor = (x + r + 6 + w > g.W - 10) ? "end" : "start";
+      var bx0 = anchor === "start" ? x - r - 3 : x - r - 6 - w - 4;
+      var bx1 = anchor === "start" ? x + r + 6 + w + 6 : x + r + 3;
+      var L = 0;
+      var lv = levels[side];
+      for (; L < 24; L++) {
+        var row = lv[L] || (lv[L] = []);
+        var clash = row.some(function (b) { return !(bx1 < b[0] || bx0 > b[1]); });
+        if (!clash) break;
+      }
+      lv[L].push([bx0, bx1]);
+      if (L > maxL[side]) maxL[side] = L;
+      pos[d.id] = { x: x, side: side, level: L, anchor: anchor, r: r };
+    });
+    var upH = BASE + maxL.up * STEP + 18;
+    var downH = BASE + maxL.down * STEP + 22;
+    var axisY = TOPPAD + upH + BAND / 2;
+    var H = axisY + BAND / 2 + downH + BOTPAD;
+    D.forEach(function (d) {
+      var p = pos[d.id];
+      var off = BAND / 2 + BASE + p.level * STEP;
+      p.y = p.side === "up" ? axisY - off : axisY + off;
+    });
+    return { g: g, pos: pos, axisY: axisY, H: H };
+  }
+
+  // ---------- static svg structure ----------
+  var defs = el("defs", {}, svg);
+  defs.innerHTML = '<filter id="rtt-glow" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  var gSky = el("g", { "class": "starfield", "aria-hidden": "true" }, svg),
+      gBands = el("g", {}, svg), gAxis = el("g", {}, svg), gSpan = el("g", {}, svg), gTicks = el("g", {}, svg),
+      gEdges = el("g", {}, svg), gMs = el("g", {}, svg), gItems = el("g", {}, svg);
+  var SKY = (function () {
+    var seed = 7, out = [];
+    function rnd() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
+    for (var i = 0; i < 240; i++) out.push([rnd(), rnd(), 0.35 + rnd() * 0.85, 0.12 + rnd() * 0.55]);
+    return out;
+  })();
+  var edgeEls = EDGES.map(function (e) { return el("path", { "class": "edge " + e.kind }, gEdges); });
+  var itemEls = {};
+  var lastPT = "mouse";
+  svg.addEventListener("pointerdown", function (ev) { lastPT = ev.pointerType; });
+  ORDER.forEach(function (d) {
+    var gi = el("g", { "class": "item", tabindex: "0", role: "button", "aria-label": d.name + ", " + d.date }, gItems);
+    var o = {
+      g: gi,
+      stem: el("line", { "class": "stem" }, gi),
+      foot: el("circle", { "class": "foot", r: "1.6" }, gi),
+      halo: el("circle", { "class": "halo" }, gi),
+      dot: el("circle", { "class": "dot" + (d.size === "none" ? " hist" : "") + (d.rough ? " rough" : "") + (d.size === "xl" || d.size === "l" ? " big" : "") }, gi),
+      lbl: el("text", { "class": "lbl" }, gi),
+      hit: el("rect", { "class": "hit" }, gi)
+    };
+    o.nm = el("tspan", { "class": "nm" }, o.lbl); o.nm.textContent = d.label;
+    o.dt = el("tspan", { "class": "dt" }, o.lbl); o.dt.textContent = d.ds;
+    itemEls[d.id] = o;
+    gi.addEventListener("click", function () { select(d.id, true); });
+    gi.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(d.id, true); }
+      if (ev.key === "ArrowRight" || ev.key === "ArrowLeft") {
+        ev.preventDefault();
+        var i = ORDER.indexOf(d) + (ev.key === "ArrowRight" ? 1 : -1);
+        var n = ORDER[(i + ORDER.length) % ORDER.length];
+        itemEls[n.id].g.focus();
+      }
+      if (ev.key === "Escape") hideTip();
+    });
+    gi.addEventListener("pointerenter", function (ev) { if (ev.pointerType === "mouse") showTip(tipForReligion(d), ev.clientX, ev.clientY); });
+    gi.addEventListener("pointermove", function (ev) { if (ev.pointerType === "mouse") placeTip(ev.clientX, ev.clientY); });
+    gi.addEventListener("pointerleave", hideTip);
+    gi.addEventListener("focus", function () {
+      if (lastPT === "touch") return;
+      var b = o.dot.getBoundingClientRect();
+      showTip(tipForReligion(d), b.right, b.bottom);
+    });
+    gi.addEventListener("blur", hideTip);
+  });
+  gMs.addEventListener("pointerover", function (ev) {
+    var t = ev.target.closest ? ev.target.closest(".ms") : null;
+    if (!t) return;
+    var m = BY[state.sel].milestones[+t.getAttribute("data-i")];
+    showTip({ title: m[1], when: fmtMoment(m) + " · " + BY[state.sel].name }, ev.clientX, ev.clientY);
+  });
+  gMs.addEventListener("pointermove", function (ev) { placeTip(ev.clientX, ev.clientY); });
+  gMs.addEventListener("pointerout", function (ev) { if (!ev.relatedTarget || !gMs.contains(ev.relatedTarget)) hideTip(); });
+
+  // ---------- drawing ----------
+  var frame = null;
+  function draw(f) {
+    frame = f;
+    var g = f.g, ay = f.axisY, top = ay - BAND / 2, bot = ay + BAND / 2;
+    svg.setAttribute("width", g.W);
+    svg.setAttribute("height", Math.round(f.H));
+    svg.setAttribute("viewBox", "0 0 " + g.W + " " + Math.round(f.H));
+
+    // background stars (night theme only; hidden by the --starfield token in day)
+    var sh = "", n = Math.min(SKY.length, Math.round(g.W * f.H / 4200));
+    for (var i = 0; i < n; i++) {
+      var sx = SKY[i][0] * g.W, sy = SKY[i][1] * f.H;
+      if (Math.abs(sy - ay) < BAND) continue;
+      sh += '<circle cx="' + sx.toFixed(1) + '" cy="' + sy.toFixed(1) + '" r="' + SKY[i][2].toFixed(2) + '" opacity="' + SKY[i][3].toFixed(2) + '"/>';
+    }
+    gSky.innerHTML = sh;
+
+    // eras
+    var bh = "";
+    ERAS.forEach(function (e, i) {
+      var a = X(g, e.a), b = Math.min(X(g, e.b), g.x0 + g.mainW + 30);
+      if (i % 2 === 0) bh += '<rect class="era-band" x="' + a.toFixed(1) + '" y="0" width="' + (b - a).toFixed(1) + '" height="' + f.H.toFixed(1) + '"/>';
+      ctx.font = '500 10px "IBM Plex Mono", monospace';
+      var tw = ctx.measureText(e.name.toUpperCase()).width + e.name.length * 1.4;
+      if (b - a > tw + 12) bh += '<text class="era-name" x="' + ((a + b) / 2).toFixed(1) + '" y="20" text-anchor="middle">' + e.name + "</text>";
+    });
+    bh += '<text class="era-name" x="' + (g.ml + g.preW / 2).toFixed(1) + '" y="20" text-anchor="middle">Prehistory</text>';
+    gBands.innerHTML = bh;
+
+    // axis band, undated block, break mark
+    var ah = '<rect class="axis-band" x="' + g.ml + '" y="' + top + '" width="' + (g.preW + 4).toFixed(1) + '" height="' + BAND + '" rx="12"/>';
+    ah += '<rect class="axis-band" x="' + (g.x0 - 10).toFixed(1) + '" y="' + top + '" width="' + (g.mainW + 46).toFixed(1) + '" height="' + BAND + '" rx="12"/>';
+    ah += '<text class="pre-label" x="' + (g.ml + g.preW / 2 + 2).toFixed(1) + '" y="' + (ay + 3.5) + '" text-anchor="middle">UNDATED</text>';
+    var bx = g.ml + g.preW + 15;
+    ah += '<line class="break" x1="' + (bx - 4) + '" y1="' + (ay + 6) + '" x2="' + (bx) + '" y2="' + (ay - 6) + '"/>';
+    ah += '<line class="break" x1="' + (bx + 1) + '" y1="' + (ay + 6) + '" x2="' + (bx + 5) + '" y2="' + (ay - 6) + '"/>';
+    gAxis.innerHTML = ah;
+
+    // ticks above the span band
+    ah = "";
+    var kept = [];
+    ctx.font = '400 10.5px "IBM Plex Mono", Menlo, monospace';
+    TICKS.forEach(function (y) {
+      var x = X(g, y), hw = ctx.measureText(fmtYear(y)).width / 2 + 9;
+      if (kept.some(function (k) { return x + hw > k[0] && x - hw < k[1]; })) return;
+      kept.push([x - hw, x + hw]);
+      ah += '<line class="tick" x1="' + x.toFixed(1) + '" y1="' + (top - 4) + '" x2="' + x.toFixed(1) + '" y2="' + top + '"/>';
+      ah += '<line class="tick" x1="' + x.toFixed(1) + '" y1="' + bot + '" x2="' + x.toFixed(1) + '" y2="' + (bot + 4) + '"/>';
+      ah += '<text class="tick-label" x="' + x.toFixed(1) + '" y="' + (ay + 3.8) + '" text-anchor="middle">' + fmtYear(y) + "</text>";
+    });
+    var nx = X(g, NOW);
+    ah += '<path class="now-mark" d="M' + nx.toFixed(1) + "," + (top - 7) + ' l4,4 l-4,4 l-4,-4z"/>';
+    ah += '<text class="now-label" x="' + (nx + 8).toFixed(1) + '" y="' + (top - 3) + '">TODAY</text>';
+    gTicks.innerHTML = ah;
+
+    // items
+    D.forEach(function (d) {
+      var p = f.pos[d.id], o = itemEls[d.id], w = widths[d.id] || 80;
+      var y0 = p.side === "up" ? top : bot;
+      o.stem.setAttribute("x1", p.x); o.stem.setAttribute("x2", p.x);
+      o.stem.setAttribute("y1", y0); o.stem.setAttribute("y2", p.y);
+      o.foot.setAttribute("cx", p.x); o.foot.setAttribute("cy", y0);
+      o.dot.setAttribute("cx", p.x); o.dot.setAttribute("cy", p.y); o.dot.setAttribute("r", p.r);
+      o.halo.setAttribute("cx", p.x); o.halo.setAttribute("cy", p.y); o.halo.setAttribute("r", p.r + 4.5);
+      var tx = p.anchor === "start" ? p.x + p.r + 6 : p.x - p.r - 6;
+      o.lbl.setAttribute("text-anchor", p.anchor);
+      o.nm.setAttribute("x", tx); o.nm.setAttribute("y", p.y - 0.5);
+      o.dt.setAttribute("x", tx); o.dt.setAttribute("y", p.y + 11);
+      var hx = p.anchor === "start" ? p.x - 12 : p.x - p.r - 8 - w;
+      o.hit.setAttribute("x", hx); o.hit.setAttribute("y", p.y - 14);
+      o.hit.setAttribute("width", w + p.r + 20); o.hit.setAttribute("height", 30);
+    });
+
+    // edges
+    EDGES.forEach(function (e, i) {
+      var a = f.pos[e.from], b = f.pos[e.to];
+      var mx = (a.x + b.x) / 2;
+      edgeEls[i].setAttribute("d", "M" + a.x.toFixed(1) + "," + a.y.toFixed(1) + " C" + mx.toFixed(1) + "," + a.y.toFixed(1) + " " + mx.toFixed(1) + "," + b.y.toFixed(1) + " " + b.x.toFixed(1) + "," + b.y.toFixed(1));
+    });
+    drawSpan();
+  }
+
+  function drawSpan() {
+    if (!frame) return;
+    var d = BY[state.sel], g = frame.g, top = frame.axisY - BAND / 2;
+    var h = "";
+    if (d && d.pre == null) {
+      var a = X(g, d.y), b = X(g, d.end != null ? d.end : NOW);
+      h += '<rect class="span" x="' + a.toFixed(1) + '" y="' + (top + 2) + '" width="' + Math.max(3, b - a).toFixed(1) + '" height="' + (BAND - 4) + '" rx="10"/>';
+      if (d.range) {
+        var ra = X(g, d.range[0]), rb = X(g, d.range[1]);
+        h += '<rect class="span-range" x="' + ra.toFixed(1) + '" y="' + (top - 3) + '" width="' + Math.max(2, rb - ra).toFixed(1) + '" height="' + (BAND + 6) + '" rx="12"/>';
+      }
+    }
+    gSpan.innerHTML = h;
+    var mh = "";
+    (d.milestones || []).forEach(function (m, i) {
+      if (m[0] < Y0) return;
+      var x = X(g, m[0]).toFixed(1);
+      mh += '<g class="ms" data-i="' + i + '" aria-hidden="true"><circle class="ms-hit" cx="' + x + '" cy="' + top + '" r="9"/>' +
+        '<path class="ms-d" d="M' + x + "," + (top - 5) + ' l5,5 l-5,5 l-5,-5z"/></g>';
+    });
+    gMs.innerHTML = mh;
+  }
+
+  // ---------- highlight state ----------
+  function applyState() {
+    var sel = state.sel, fam = state.fam;
+    var rel = {};
+    if (sel) {
+      BY[sel].parents.forEach(function (p) { rel[p[0]] = 1; });
+      BY[sel].kids.forEach(function (k) { rel[k[0]] = 1; });
+    }
+    D.forEach(function (d) {
+      var c = itemEls[d.id].g.classList;
+      c.toggle("dim", fam !== "all" && d.fam !== fam && d.id !== sel);
+      c.toggle("sel", d.id === sel);
+      c.toggle("rel", !!rel[d.id]);
+      itemEls[d.id].g.setAttribute("aria-pressed", d.id === sel ? "true" : "false");
+    });
+    EDGES.forEach(function (e, i) {
+      var c = edgeEls[i].classList;
+      var hot = sel && (e.from === sel || e.to === sel);
+      var famEdge = fam !== "all" && BY[e.from].fam === fam && BY[e.to].fam === fam;
+      c.toggle("hot", !!hot);
+      c.toggle("fam", !hot && famEdge);
+      c.toggle("cold", !hot && !famEdge && (fam !== "all" || !!sel));
+    });
+    drawSpan();
+    document.querySelectorAll("#chips .chip").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.fam === fam ? "true" : "false"); });
+    document.querySelectorAll("#tbody tr").forEach(function (tr) {
+      tr.hidden = fam !== "all" && BY[tr.dataset.id].fam !== fam;
+      tr.setAttribute("aria-selected", tr.dataset.id === sel ? "true" : "false");
+    });
+    document.querySelectorAll("#bars .bar-row").forEach(function (b) { b.classList.toggle("sel", b.dataset.id === sel); });
+  }
+
+  // ---------- tooltip ----------
+  function tipForReligion(d) {
+    return {
+      title: d.name,
+      when: d.date + (d.end != null ? " – ended " + d.endLabel.split(",")[0] : ""),
+      text: d.story.split(/(?<=[A-Za-z)\d]{2}[.!?])\s+(?=[A-Z"])/)[0],
+      foot: "Followers today: " + d.followers
+    };
+  }
+  function showTip(t, cx, cy) {
+    tip.innerHTML = "<strong></strong><span class=\"when\"></span>" + (t.text ? "<span class=\"s\"></span>" : "") + (t.foot ? "<span class=\"foll\"></span>" : "");
+    tip.querySelector("strong").textContent = t.title;
+    tip.querySelector(".when").textContent = t.when;
+    if (t.text) tip.querySelector(".s").textContent = t.text;
+    if (t.foot) tip.querySelector(".foll").textContent = t.foot;
+    tip.hidden = false;
+    placeTip(cx, cy);
+  }
+  function placeTip(cx, cy) {
+    if (tip.hidden) return;
+    var r = shell.getBoundingClientRect();
+    var tw = tip.offsetWidth, th = tip.offsetHeight;
+    var x = cx - r.left + 16, y = cy - r.top + 16;
+    if (x + tw > r.width - 8) x = cx - r.left - tw - 16;
+    if (x < 8) x = 8;
+    if (y + th > r.height - 8) y = cy - r.top - th - 16;
+    if (y < 8) y = 8;
+    tip.style.transform = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+  }
+  function hideTip() { tip.hidden = true; }
+
+  // ---------- detail ----------
+  var KIND_UP = { grew: "its parent", drew: "an influence", kin: "shared roots" };
+  var KIND_DOWN = { grew: "grew out of it", drew: "drew on it", kin: "shared roots" };
+  function relChips(list, kinds) {
+    if (!list.length) return '<span class="none">None shown on this chart</span>';
+    return list.map(function (p) {
+      return '<button type="button" class="rel-chip" data-go="' + p[0] + '">' + esc(BY[p[0]].label) + '<span class="k">' + kinds[p[1]] + "</span></button>";
+    }).join("");
+  }
+  function noteLink(d) {
+    if (!NOTES || !NOTES.files || !NOTES.files[d.id]) return "";
+    var url = "obsidian://open?vault=" + encodeURIComponent(NOTES.vault) + "&file=" + encodeURIComponent(NOTES.files[d.id]);
+    return '<a href="' + esc(url) + '">Open the history note in Obsidian</a><small>(works on the computer that has the notes)</small>';
+  }
+  function renderDetail() {
+    var d = BY[state.sel];
+    var det = document.getElementById("detail");
+    var span = d.pre != null ? "Its beginnings are older than any record, so it sits in the undated block on the left." :
+      (d.end != null ? "Practised until " + d.endLabel + ". The gold band on the timeline shows its whole span." :
+      "Still practised today. The gold band on the timeline shows its span from " + d.ds + " to now.");
+    if (d.rangeLabel) span += " The dotted outline marks the uncertain or gradual start (" + d.rangeLabel + ").";
+    var moments = (d.milestones || []).map(function (m, i) {
+      return '<li tabindex="0" data-i="' + i + '"><span class="yr">' + esc(fmtMoment(m)) + "</span><span>" + esc(m[1]) + "</span></li>";
+    }).join("");
+    var eras = (d.eras || []).map(function (e) { return "<li>" + esc(e) + "</li>"; }).join("");
+    var seen = {}, sources = [[d.name + " on Wikipedia", W_BASE + d.wiki]].concat(d.sources || []).filter(function (s) {
+      var k = s[1].replace(/\/$/, "");
+      if (seen[k]) return false;
+      seen[k] = 1; return true;
+    }).map(function (s) {
+      return '<li><a href="' + esc(s[1]) + '" target="_blank" rel="noopener">' + esc(s[0].replace(/^Wikipedia: /, "")) + " ↗</a></li>";
+    }).join("");
+    det.innerHTML =
+      "<div>" +
+        '<div class="meta"><span class="fam-tag">' + esc(FAM_NAME[d.fam]) + "</span><span>" + (d.how === "founded" ? "Founded by a teacher or prophet" : "Grew out of a people's traditions") + "</span><span>" + esc(d.status) + "</span></div>" +
+        "<h2>" + esc(d.name) + "</h2>" +
+        '<p class="when-big">' + esc(d.date) + "</p>" +
+        '<p class="kicker">How it came out</p>' +
+        '<p class="story">' + esc(d.story) + "</p>" +
+        (moments ? '<p class="kicker">Key moments</p><ol class="moments" id="moments">' + moments + "</ol>" : "") +
+        '<p class="kicker">On the timeline</p><p class="story small">' + esc(span) + "</p>" +
+        '<div class="links"><a href="' + W_BASE + d.wiki + '" target="_blank" rel="noopener">Read more on Wikipedia ↗</a>' + noteLink(d) + "</div>" +
+      "</div>" +
+      "<div><dl>" +
+        "<div><dt>Where it began</dt><dd>" + esc(d.origin) + "</dd></div>" +
+        "<div><dt>Founder and key figures</dt><dd>" + esc(d.founders) + "</dd></div>" +
+        "<div><dt>Core beliefs</dt><dd>" + esc(d.beliefs) + "</dd></div>" +
+        "<div><dt>Sacred texts</dt><dd>" + esc(d.texts) + "</dd></div>" +
+        (d.branches ? "<div><dt>Main branches</dt><dd>" + esc(d.branches) + "</dd></div>" : "") +
+        "<div><dt>Followers today</dt><dd>" + esc(d.followers) + (d.followersSource ? '<span class="src">Source: ' + esc(d.followersSource) + "</span>" : "") + "</dd></div>" +
+        "<div><dt>Came out of</dt><dd class=\"rels\">" + relChips(d.parents, KIND_UP) + "</dd></div>" +
+        "<div><dt>What came out of it</dt><dd class=\"rels\">" + relChips(d.kids, KIND_DOWN) + "</dd></div>" +
+        (eras ? "<div><dt>Its history in " + d.eras.length + " eras</dt><dd><ol class=\"eras\">" + eras + "</ol></dd></div>" : "") +
+        "<div><dt>Sources and further reading</dt><dd><ul class=\"srcs\">" + sources + "</ul></dd></div>" +
+      "</dl></div>";
+    det.querySelectorAll("[data-go]").forEach(function (b) {
+      b.addEventListener("click", function () { select(b.dataset.go, false); focusItem(b.dataset.go); });
+    });
+    det.querySelectorAll("#moments li").forEach(function (li) {
+      function on() { var m = gMs.querySelector('.ms[data-i="' + li.dataset.i + '"]'); if (m) m.classList.add("hot"); }
+      function off() { var m = gMs.querySelector('.ms[data-i="' + li.dataset.i + '"]'); if (m) m.classList.remove("hot"); }
+      li.addEventListener("mouseenter", on); li.addEventListener("mouseleave", off);
+      li.addEventListener("focus", on); li.addEventListener("blur", off);
+    });
+  }
+  function focusItem(id) {
+    if (state.view !== "time" || !frame) return;
+    var p = frame.pos[id];
+    var sw = scroller.clientWidth;
+    if (p.x < scroller.scrollLeft + 40 || p.x > scroller.scrollLeft + sw - 40) {
+      scroller.scrollTo({ left: Math.max(0, p.x - sw / 2), behavior: reduced() ? "auto" : "smooth" });
+    }
+  }
+  function select(id, fromChart) {
+    state.sel = id;
+    applyState();
+    renderDetail();
+    try { history.replaceState(null, "", "#" + id); } catch (e) {}
+    if (fromChart) {
+      var det = document.getElementById("detail");
+      var rb = det.getBoundingClientRect();
+      if (rb.top > window.innerHeight - 80) det.scrollIntoView({ block: "nearest", behavior: reduced() ? "auto" : "smooth" });
+    }
+  }
+
+  // ---------- the world today, sources ----------
+  function renderWorld() {
+    var w = DATA.world, max = Math.max.apply(null, w.groups.map(function (g) { return g.share; }));
+    document.getElementById("world-sub").textContent = "Share of the world's population by religion, " + w.year;
+    document.getElementById("bars").innerHTML = w.groups.map(function (g) {
+      var tag = g.id ? "button" : "div";
+      return "<" + tag + (g.id ? ' type="button" data-id="' + g.id + '" aria-label="' + esc(g.name + ", " + g.share + "%, show " + BY[g.id].name) + '"' : "") + ' class="bar-row">' +
+        "<span>" + esc(g.name) + '</span><span class="track"><span class="fill" style="display:block;width:' + (g.share / max * 100).toFixed(1) + '%"></span></span>' +
+        '<span class="val">' + g.share.toFixed(1) + "% · " + esc(g.people) + "</span></" + tag + ">";
+    }).join("");
+    document.querySelectorAll("#bars button.bar-row").forEach(function (b) {
+      b.addEventListener("click", function () { select(b.dataset.id, false); focusItem(b.dataset.id); });
+    });
+    var link = '<a href="' + esc(w.source.url) + '" target="_blank" rel="noopener">' + esc(w.source.title) + "</a>";
+    document.getElementById("world-src").innerHTML = "Source: " + link + ". “Religiously unaffiliated” is not the same as atheist: many in this group believe in God or spirits. “Other religions” includes Sikhs, Jains, Bahá’ís, Taoists, Shinto, Zoroastrians, Wiccans and many folk religions.";
+    document.getElementById("m-world").innerHTML = "World shares: " + link + ", " + w.year + " data.";
+    var groups = {}, order = [];
+    D.filter(function (d) { return d.followersSource; }).forEach(function (d) {
+      if (!groups[d.followersSource]) { groups[d.followersSource] = []; order.push(d.followersSource); }
+      groups[d.followersSource].push(d.name);
+    });
+    order.sort(function (x, y) { return groups[y].length - groups[x].length || groups[x][0].localeCompare(groups[y][0]); });
+    document.getElementById("m-followers").innerHTML = order.map(function (s) {
+      return "<li><b>" + esc(groups[s].sort().join(", ")) + ":</b> " + esc(s) + "</li>";
+    }).join("");
+  }
+
+  // ---------- controls ----------
+  var chips = document.getElementById("chips");
+  [["all", "All"]].concat(FAMS).forEach(function (f) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.dataset.fam = f[0];
+    var n = f[0] === "all" ? D.length : D.filter(function (d) { return d.fam === f[0]; }).length;
+    b.innerHTML = esc(f[1]) + '<span class="n">' + n + "</span>";
+    b.addEventListener("click", function () { state.fam = (state.fam === f[0] && f[0] !== "all") ? "all" : f[0]; applyState(); });
+    chips.appendChild(b);
+  });
+
+  var find = document.getElementById("find");
+  document.getElementById("find-list").innerHTML = ORDER.map(function (d) { return '<option value="' + esc(d.name) + '"></option>'; }).join("");
+  function runFind(exactOnly) {
+    var q = find.value.trim().toLowerCase();
+    find.removeAttribute("aria-invalid");
+    if (!q) return;
+    function hay(d) { return (d.name + " " + d.label).toLowerCase(); }
+    var hit = findFirst(D, function (d) { return d.name.toLowerCase() === q || d.label.toLowerCase() === q; });
+    if (!hit && !exactOnly) hit = findFirst(D, function (d) { return d.name.toLowerCase().indexOf(q) === 0 || d.label.toLowerCase().indexOf(q) === 0; }) || findFirst(D, function (d) { return hay(d).indexOf(q) >= 0; });
+    if (!hit) { if (!exactOnly) find.setAttribute("aria-invalid", "true"); return; }
+    if (state.fam !== "all" && hit.fam !== state.fam) state.fam = "all";
+    select(hit.id, false);
+    focusItem(hit.id);
+    find.value = "";
+  }
+  find.addEventListener("input", function () { runFind(true); });
+  find.addEventListener("keydown", function (ev) { if (ev.key === "Enter") { ev.preventDefault(); runFind(false); } });
+
+  var anim = null;
+  function setScale(s) {
+    if (s === state.s) return;
+    state.s = s;
+    try { localStorage.setItem("rtt-scale", String(s)); } catch (e) {}
+    syncScale();
+    var A = frame, B = layout(s);
+    if (!A || reduced()) { draw(B); return; }
+    if (anim) cancelAnimationFrame(anim);
+    var t0 = performance.now(), dur = 650;
+    function stepFn(now) {
+      var t = Math.min(1, (now - t0) / dur);
+      var e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      var g = geometry(A.g.s + (B.g.s - A.g.s) * e);
+      var pos = {};
+      D.forEach(function (d) {
+        var a = A.pos[d.id], b = B.pos[d.id];
+        pos[d.id] = { x: a.x + (b.x - a.x) * e, y: a.y + (b.y - a.y) * e, side: b.side, anchor: e < 0.5 ? a.anchor : b.anchor, r: b.r, level: b.level };
+      });
+      draw({ g: g, pos: pos, axisY: A.axisY + (B.axisY - A.axisY) * e, H: A.H + (B.H - A.H) * e });
+      if (t < 1) anim = requestAnimationFrame(stepFn); else { anim = null; draw(B); }
+    }
+    anim = requestAnimationFrame(stepFn);
+  }
+  function syncScale() {
+    document.getElementById("sc-stretch").setAttribute("aria-pressed", state.s === 0 ? "true" : "false");
+    document.getElementById("sc-true").setAttribute("aria-pressed", state.s === 1 ? "true" : "false");
+    document.getElementById("scale-note").textContent = state.s === 0
+      ? "Time is stretched toward the present so the crowded last two centuries have room. Prehistoric traditions sit in the block on the left."
+      : "True to time: every century gets the same width. Most of today's religions are young next to the 5,000 years of recorded history.";
+  }
+  document.getElementById("sc-stretch").addEventListener("click", function () { setScale(0); });
+  document.getElementById("sc-true").addEventListener("click", function () { setScale(1); });
+
+  function setView(v) {
+    state.view = v;
+    document.getElementById("v-time").setAttribute("aria-pressed", v === "time" ? "true" : "false");
+    document.getElementById("v-list").setAttribute("aria-pressed", v === "list" ? "true" : "false");
+    scroller.hidden = v !== "time";
+    document.getElementById("listwrap").hidden = v !== "list";
+    document.getElementById("caption").hidden = v !== "time";
+    hideTip();
+  }
+  document.getElementById("v-time").addEventListener("click", function () { setView("time"); });
+  document.getElementById("v-list").addEventListener("click", function () { setView("list"); });
+
+  // list view
+  var tbody = document.getElementById("tbody");
+  ORDER.forEach(function (d) {
+    var tr = document.createElement("tr");
+    tr.dataset.id = d.id; tr.tabIndex = 0;
+    tr.innerHTML = "<td>" + esc(d.name) + '</td><td class="when">' + esc(d.ds) + "</td><td>" + (d.how === "founded" ? "Founded" : "Grew") + "</td><td>" + esc(FAM_NAME[d.fam]) + "</td><td>" + esc(d.origin) + "</td><td>" + esc(d.followers) + "</td>";
+    tr.addEventListener("click", function () { select(d.id, true); });
+    tr.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(d.id, true); } });
+    tbody.appendChild(tr);
+  });
+
+  // ---------- boot ----------
+  function relayout() { measure(); draw(layout(state.s)); }
+  syncScale();
+  relayout();
+  renderWorld();
+  applyState();
+  renderDetail();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { relayout(); applyState(); });
+  var lastW = scroller.clientWidth;
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () {
+      var w = scroller.clientWidth;
+      if (Math.abs(w - lastW) > 4) { lastW = w; draw(layout(state.s)); }
+    }).observe(shell);
+  }
+  requestAnimationFrame(function () { focusItem(state.sel); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# OS and editor files
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Node (the project has no dependencies, but keep stray installs out)
+node_modules/
+npm-debug.log*
+
+# Local scratch output
+tmp/
+*.log
+.env
+
+# Build output (the artifact fragment; index.html is committed)
+dist/
