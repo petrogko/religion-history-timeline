@@ -2,6 +2,11 @@
 
 All notable changes to this project. Newest first. Dates are ISO (YYYY-MM-DD).
 
+## [Unreleased]
+
+### Added
+- A link to the live site at the top of the README.
+
 ## [1.1.0] — 2026-10-01
 
 ### Added

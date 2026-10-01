@@ -2,6 +2,8 @@
 
 An interactive timeline of 44 world religions, from the Aboriginal Dreaming to Falun Gong. It shows **when** each religion came out, **how** it came out (started by a founding teacher or prophet, or grown gradually out of a people's traditions), its **key moments**, and **which religions grew out of which**.
 
+**Live site: [petrogko.com/religion-history-timeline](https://petrogko.com/religion-history-timeline/)**
+
 It is a single, dependency-free HTML page: open `index.html` in any modern browser.
 
 ![Religions Through Time in the Night theme: stars above and below a glowing time band, with Christianity selected and its key moments marked](docs/screenshot.png)
@@ -89,7 +91,7 @@ Requires Node.js 20 or later. There are no npm dependencies.
 
 ## Publishing
 
-- **GitHub Pages:** Settings → Pages → *Deploy from a branch* → `main` / root. `index.html` is the site.
+- **GitHub Pages:** the site is deployed from `main` / root (Settings → Pages → *Deploy from a branch*). `index.html` is the site, and every push to `main` republishes it.
 - **Claude artifact:** `npm run build` writes `dist/religions-through-time.html`, written to the claude.ai artifact page contract. See [AI/RUNBOOK.md](AI/RUNBOOK.md#republish-the-claude-artifact).
 
 ## About the content
